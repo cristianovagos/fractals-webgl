@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+    <head>
+	    <title>CV 2017/18 - WebGL Project</title>
+        <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+        <script id="shader-fs" type="x-shader/x-fragment">
+            void main(void) {
+                // always RED color
+                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            }
+        </script>
+        
+        <script id="shader-vs" type="x-shader/x-vertex">
+            attribute vec3 aVertexPosition;
+            attribute vec3 aVertexNormal;
+        
+            uniform mat4 uMVMatrix;
+            uniform mat4 uPMatrix;
+            uniform mat3 uNMatrix;
+        
+            void main(void) {
+                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+            }
+        </script>
+        <script type="text/javascript" src="initShaders.js"></script>
+        <script type="text/javascript" src="webgl-utils.js"></script>
+        <script type="text/javascript" src="maths.js"></script>
+        <script type="text/javascript" src="fractals.js"></script>
+    </head>
+    <body onload="runWebGL();">
+        <div style="text-align: center"> 
+            <p>CV 2017/18 - WebGL Project</p>
+            
+            <canvas id="my-canvas" style="border:1px solid #000000;" width="350" height="350"></canvas>
+            
+            <p>XX rotation: 
+                
+            <button id="XX-on-off-button">On / Off</button>
+    
+            <button id="XX-direction-button">Change Direction</button>
+    
+            <button id="XX-slower-button">Slower</button>
+    
+            <button id="XX-faster-button">Faster</button>
+    
+            </p>
+    
+            <p>YY rotation: 
+                
+            <button id="YY-on-off-button">On / Off</button>
+    
+            <button id="YY-direction-button">Change Direction</button>
+    
+            <button id="YY-slower-button">Slower</button>
+    
+            <button id="YY-faster-button">Faster</button>
+    
+            </p>
+    
+            <p>ZZ rotation: 
+                
+            <button id="ZZ-on-off-button">On / Off</button>
+    
+            <button id="ZZ-direction-button">Change Direction</button>
+    
+            <button id="ZZ-slower-button">Slower</button>
+    
+            <button id="ZZ-faster-button">Faster</button>
+    
+            </p>
+            
+            <p>Choose the <b>projection type</b>:
+            
+            <select id="projection-selection">
+                <option value="0">Orthogonal Projection</option>
+                <option value="1">Perspective Projection</option>
+            </select>
+            
+            </p>
+            
+            <p>Choose the <b>rendering mode</b>:
+            
+            <select id="rendering-mode-selection">
+                <option value="0">Filled Triangles</option>
+                <option value="1">Wireframe</option>
+                <option value="2">Vertices</option>
+            </select>
+            
+            <button id="reset-button">Reset</button>
+            
+            <button id="face-culling-button">Back-Face-Culling ON/OFF</button>
+            
+            </p>
+        </div>
+    </body>
+        
+</html>
+        
