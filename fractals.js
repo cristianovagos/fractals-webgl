@@ -7,7 +7,7 @@ var gl = null; // WebGL context
 
 var shaderProgram = null; 
 
-var numLevels = 1;
+var numLevels = 3;
 
 var triangleVertexPositionBuffer = null;
 	
@@ -657,6 +657,13 @@ function computeKochSnowflake() {
 		
 	}
 	
+function computeHeightofTriangle(side)
+{
+	var result = side / 2;
+	result = result * Math.sqrt(3);
+	return result;
+}
+	
 function divideFace( v1, v2, v3, n )
 	{
 		if ( n == 0 ) {
@@ -678,17 +685,17 @@ function divideFace( v1, v2, v3, n )
 			var midpoint = computeCentroid( va, vb, vc );
 			var normal;
 			//Descobrir o vetor unitario perpenciular
-			var normalVector = computeNormalVector( va, vb, vc );
+			var normalVector = computeNormalVector( v1, v2, v3 );
 			
 			// Using the height of an equilateral triangle
-			var height = 0.866 * computeDistance(va, vb );
+			var height = computeHeightofTriangle(computeDistance(va, vb ));
 			
 			normalVector[0] = normalVector[0] * height;			
-			normalVector[0] = normalVector[1] * height;	
-			normalVector[0] = normalVector[2] * height;
+			normalVector[1] = normalVector[1] * height;	
+			normalVector[2] = normalVector[2] * height;
 			
-			var vH = addVector( midpoint, normalVector );
-			
+			var vH = addVector(midpoint, normalVector);
+			console.log(normalVector);
 			// TESTING
 			
 			//var v2 = midpoint;
@@ -697,11 +704,12 @@ function divideFace( v1, v2, v3, n )
 
 			// 4 new line segments
 			divideFace( va, vb, vH, n );
-			divideFace( va, vc, vH, n );			
+			divideFace( va, vH, vc, n );			
 			divideFace( vb, vc, vH, n );
-			divideFace( v1, va, vc, n );
-			divideFace( v2, vb, va, n );
-			divideFace( v3, vc, vb, n );
+			divideFace( vb, vc, vH, n );
+			//divideFace( v1, va, vc, n );
+			//divideFace( v2, vb, va, n );
+			//divideFace( v3, vc, vb, n );
 
 			addVertexes(va, vb, vc, vH);			
 		}
