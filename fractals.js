@@ -7,7 +7,7 @@ var gl = null; // WebGL context
 
 var shaderProgram = null; 
 
-var numLevels = 3;
+var numLevels = 1;
 
 var triangleVertexPositionBuffer = null;
 	
@@ -130,7 +130,7 @@ function initBuffers() {
 
 	console.log(vertices);
 
-	computeSierpinskiGasket();
+	computeKochSnowflake();
 
 	console.log(vertices);
 
@@ -625,3 +625,107 @@ function divideTetrahedron(v1, v2, v3, v4, recursionLevel) {
 		divideTetrahedron(vertex14, vertex24, vertex34, v4, recursionLevel);
 	}
 }
+
+//--------------------------------------------------------------------//
+// Tetrahedron Koch Snowflake
+
+function computeKochSnowflake() {
+		
+		// Initial vertices of the Tetrahedron
+		
+		var v1 = [ -1.0,  0.0, -0.707 ];
+		var v2 = [  0.0,  1.0,  0.707 ];
+		var v3 = [  1.0,  0.0, -0.707 ];
+		var v4 = [  0.0, -1.0,  0.707 ];
+		
+		// Clearing the vertices array;
+		
+		vertices = [];
+		//var face1 = [ v1, v2, v3 ];
+		//var face2 = [v3, v2, v4]
+        //var face3 = [v4, v2, v1]
+        //var face4 = [v1, v3, v4]
+		divideFace( v1, v2, v3,  numLevels );
+		
+		divideFace( v3, v2, v4, numLevels );
+
+		divideFace( v4, v2, v1, numLevels );
+		
+		divideFace( v1, v3, v4, numLevels );
+		
+		addVertexes ( v1, v2, v3, v4);
+		
+	}
+	
+function divideFace( v1, v2, v3, n )
+	{
+		if ( n == 0 ) {
+			return;
+		}
+		
+		else {
+    
+			// Compute new v
+			
+			var va = computeMidPoint( v1, v2);
+				
+			var vb = computeMidPoint( v2, v3);
+			
+			var vc = computeMidPoint( v1, v3);
+			
+			// Calculate the centroid
+        
+			var midpoint = computeCentroid( va, vb, vc );
+			var normal;
+			//Descobrir o vetor unitario perpenciular
+			var normalVector = computeNormalVector( va, vb, vc );
+			
+			// Using the height of an equilateral triangle
+			var height = 0.866 * computeDistance(va, vb );
+			
+			normalVector[0] = normalVector[0] * height;			
+			normalVector[0] = normalVector[1] * height;	
+			normalVector[0] = normalVector[2] * height;
+			
+			var vH = addVector( midpoint, normalVector );
+			
+			// TESTING
+			
+			//var v2 = midpoint;
+			
+			--n;
+
+			// 4 new line segments
+			divideFace( va, vb, vH, n );
+			divideFace( va, vc, vH, n );			
+			divideFace( vb, vc, vH, n );
+			divideFace( v1, va, vc, n );
+			divideFace( v2, vb, va, n );
+			divideFace( v3, vc, vb, n );
+
+			addVertexes(va, vb, vc, vH);			
+		}
+	}
+	
+	function addVertexes ( v1, v2, v3, v4)
+	{
+		var coordinatesToAdd = [].concat(v1, v2, v3,
+            v3, v2, v4,
+            v4, v2, v1,
+            v1, v3, v4);
+        for (var i = 0; i < 36; i += 1) {
+            vertices.push(coordinatesToAdd[i]);
+        }
+	}
+	//-------------------------------------------------------------------//
+	function addVector( u, v )
+	{
+		// No input checking!!
+		
+		var result = [];
+		for ( var i = 0; i < u.length; ++i ) {
+			result.push( u[i] + v[i] );
+		}
+
+		return result;
+	}
