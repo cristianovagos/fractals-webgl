@@ -130,6 +130,7 @@ function initBuffers() {
 
 	console.log(vertices);
 
+	//computeSierpinskiGasket();
 	computeKochSnowflake();
 
 	console.log(vertices);
@@ -684,7 +685,7 @@ function divideFace( v1, v2, v3, n )
         
 			var midpoint = computeCentroid( va, vb, vc );
 			var normal;
-			//Descobrir o vetor unitario perpenciular
+			//Descobrir o vetor normal unitario a face 
 			var normalVector = computeNormalVector( v1, v2, v3 );
 			
 			// Using the height of an equilateral triangle
@@ -737,3 +738,16 @@ function divideFace( v1, v2, v3, n )
 
 		return result;
 	}
+	
+	//----------------------------------------------------------------------------
+//distancia entre dois pontos
+
+function computeDistance (v1, v2)
+{
+	var aux = [v2[0]-v1[0], v2[1]-v1[1], v2[2]-v1[2]] 
+	var squaresSum = aux[0] * aux[0] + aux[1] * aux[1] + aux[2] * aux[2];
+    
+    var res = Math.sqrt( squaresSum );
+	
+	return res;
+}
