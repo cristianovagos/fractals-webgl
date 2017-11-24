@@ -1,19 +1,25 @@
+
 //----------------------------------------------------------------------------
 //
 // Global Variables
 //
+var numLevels = 4;
 
 var gl = null; // WebGL context
 
-var shaderProgram = null; 
-
-var numLevels = 3;
+var shaderProgram = null;
 
 var triangleVertexPositionBuffer = null;
 	
-var triangleVertexColorBuffer = null;
+var triangleVertexNormalBuffer = null;		//NEW
 
-// The global transformation parameters
+// The GLOBAL transformation parameters
+
+var globalAngleYY = 0.0;
+
+var globalTz = 0.0;
+
+// The local transformation parameters
 
 // The translation vector
 
@@ -33,32 +39,40 @@ var angleZZ = 0.0;
 
 // The scaling factors
 
-var sx = 0.75;
+var sx = 0.5;
 
-var sy = 0.75;
+var sy = 0.5;
 
-var sz = 0.75;
+var sz = 0.5;
 
-// NEW - Animation controls
+// GLOBAL Animation controls
 
-var rotationXX_ON = 0;
+var globalRotationYY_ON = 1;
+
+var globalRotationYY_DIR = 1;
+
+var globalRotationYY_SPEED = 1;
+
+// Local Animation controls
+
+var rotationXX_ON = 1;
 
 var rotationXX_DIR = 1;
 
 var rotationXX_SPEED = 1;
  
-var rotationYY_ON = 0;
+var rotationYY_ON = 1;
 
 var rotationYY_DIR = 1;
 
 var rotationYY_SPEED = 1;
-
-var rotationZZ_ON = 0;
+ 
+var rotationZZ_ON = 1;
 
 var rotationZZ_DIR = 1;
 
 var rotationZZ_SPEED = 1;
-
+ 
 // To allow choosing the way of drawing the model triangles
 
 var primitiveType = null;
@@ -66,48 +80,51 @@ var primitiveType = null;
 // To allow choosing the projection type
 
 var projectionType = 0;
- 
-// For storing the vertices defining the triangles
 
-var vertices = [
-	
-	-1.0, 0.0, -0.707, 
-	0.0, 1.0, 0.707,  
-	1.0, 0.0, -0.707, 
+// NEW --- The viewer position
 
-	1.0, 0.0, -0.707,  
-	0.0, 1.0, 0.707,   
-	0.0, -1.0, 0.707,   
+// It has to be updated according to the projection type
 
-	-1.0, 0.0, -0.707,
-	0.0, -1.0, 0.707,  
-	0.0, 1.0, 0.707,   
+var pos_Viewer = [ 0.0, 0.0, 0.0, 1.0 ];
 
-	-1.0, 0.0, -0.707, 
-	1.0, 0.0, -0.707,  
-	0.0, -1.0, 0.707   
-];
+// NEW --- Point Light Source Features
 
-// And their colour
+// Directional --- Homogeneous coordinate is ZERO
 
-var colors = [
-				
-	1.0, 0.0, 0.0,
-	1.0, 0.0, 0.0,
-	1.0, 0.0, 0.0,
+var pos_Light_Source = [ 0.0, 0.0, 1.0, 0.0 ];
 
-	0.0, 1.0, 0.0,
-	0.0, 1.0, 0.0, 
-	0.0, 1.0, 0.0, 
+// White light
 
-	0.0, 0.0, 1.0,
-	0.0, 0.0, 1.0,
-	0.0, 0.0, 1.0,
+var int_Light_Source = [ 1.0, 1.0, 1.0 ];
 
-	1.0, 1.0, 0.0,
-	1.0, 1.0, 0.0,
-	1.0, 1.0, 0.0		 			 
-];
+// Low ambient illumination
+
+var ambient_Illumination = [ 0.3, 0.3, 0.3 ];
+
+// NEW --- Model Material Features
+
+// Ambient coef.
+
+var kAmbi = [ 0.2, 0.2, 0.2 ];
+
+// Diffuse coef.
+
+var kDiff = [ 0.0, 0.0, 0.6 ];
+
+// Specular coef.
+
+var kSpec = [ 0.7, 0.7, 0.7 ];
+
+// Phong coef.
+
+var nPhong = 100;
+
+// Initial model has just ONE TRIANGLE
+
+var vertices = [ ];
+
+var normals = [ ];
+
 
 //----------------------------------------------------------------------------
 //
@@ -119,22 +136,18 @@ var colors = [
 //  Rendering
 //
 
-// Handling the Vertex and the Color Buffers
+// Handling the Vertex Coordinates and the Vertex Normal Vectors
 
 function initBuffers() {	
 	
-	// Coordinates
-		
-	triangleVertexPositionBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-
-	console.log(vertices);
-
+	// Vertex Coordinates
 	//computeSierpinskiGasket();
 	computeKochSnowflake();
-
-	console.log(vertices);
-
+	//computeMosely();
+	//console.log(vertices);
+	
+	triangleVertexPositionBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 	triangleVertexPositionBuffer.itemSize = 3;
 	triangleVertexPositionBuffer.numItems = vertices.length / 3;			
@@ -145,94 +158,89 @@ function initBuffers() {
 			triangleVertexPositionBuffer.itemSize, 
 			gl.FLOAT, false, 0, 0);
 	
-	// Colors
+	// Vertex Normal Vectors
 		
-	triangleVertexColorBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-	triangleVertexColorBuffer.itemSize = 3;
-	triangleVertexColorBuffer.numItems = colors.length / 3;			
+	triangleVertexNormalBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexNormalBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+	triangleVertexNormalBuffer.itemSize = 3;
+	triangleVertexNormalBuffer.numItems = normals.length / 3;			
 
 	// Associating to the vertex shader
 	
-	gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 
-			triangleVertexColorBuffer.itemSize, 
-			gl.FLOAT, false, 0, 0);
+	gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 
+			triangleVertexNormalBuffer.itemSize, 
+			gl.FLOAT, false, 0, 0);	
 }
 
 //----------------------------------------------------------------------------
 
-//  Drawing the 3D scene
+//  Drawing the model
 
-function drawScene() {
-	
-	var pMatrix;
-	
-	// Clearing with the background color
-	
-	gl.clear(gl.COLOR_BUFFER_BIT);
-	
-	// NEW --- Computing the Projection Matrix
-	
-	if( projectionType == 0 ) {
-		
-		// For now, the default orthogonal view volume
-		
-		pMatrix = ortho( -1.0, 1.0, -1.0, 1.0, -1.0, 1.0 );
-		
-		// No need to move the model into the view volume !!
-		
-		tz = 0;
-		
-		// TO BE DONE !
-		
-		// Allow the user to control the size of the view volume
-	}
-	else {	
+function drawModel( angleXX, angleYY, angleZZ, 
+					sx, sy, sz,
+					tx, ty, tz,
+					mvMatrix,
+					primitiveType ) {
 
-		// A standard view volume.
-		
-		// Viewer is at (0,0,0)
-		
-		// Ensure that the model is "inside" the view volume
-		
-		pMatrix = perspective( 45, 1, 0.05, 10 );
-		
-		tz = -1.5;
-
-	}
+	// The the global model transformation is an input
 	
-	// Passing the Projection Matrix to apply the current projection
+	// Concatenate with the particular model transformations
 	
-	var pUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-	
-	gl.uniformMatrix4fv(pUniform, false, new Float32Array(flatten(pMatrix)));
-	
-	// Computing the Model-View Matrix
-	
-	// Pay attention to the matrix multiplication order!!
-	
-	// First transformation ?
-	
-	// Last transformation ?
-	
-	var mvMatrix = mult( rotationZZMatrix( angleZZ ), 
-	
-						 scalingMatrix( sx, sy, sz ) );
+    // Pay attention to transformation order !!
+    
+	mvMatrix = mult( mvMatrix, translationMatrix( tx, ty, tz ) );
 						 
-	mvMatrix = mult( rotationYYMatrix( angleYY ), mvMatrix );
-						 
-	mvMatrix = mult( rotationXXMatrix( angleXX ), mvMatrix );
-						 
-	mvMatrix = mult( translationMatrix( tx, ty, tz ), mvMatrix );
+	mvMatrix = mult( mvMatrix, rotationZZMatrix( angleZZ ) );
+	
+	mvMatrix = mult( mvMatrix, rotationYYMatrix( angleYY ) );
+	
+	mvMatrix = mult( mvMatrix, rotationXXMatrix( angleXX ) );
+	
+	mvMatrix = mult( mvMatrix, scalingMatrix( sx, sy, sz ) );
 						 
 	// Passing the Model View Matrix to apply the current transformation
 	
 	var mvUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
 	
 	gl.uniformMatrix4fv(mvUniform, false, new Float32Array(flatten(mvMatrix)));
+    
+    // Multiplying the reflection coefficents
+    
+    var ambientProduct = mult( kAmbi, ambient_Illumination );
+    
+    var diffuseProduct = mult( kDiff, int_Light_Source );
+    
+    var specularProduct = mult( kSpec, int_Light_Source );
+    
+	// Associating the data to the vertex shader
 	
-	// Drawing the contents of the vertex buffer
+	// This can be done in a better way !!
+
+	// Vertex Coordinates and Vertex Normal Vectors
+	
+	initBuffers();
+	
+	// Partial illumonation terms and shininess Phong coefficient
+	
+	gl.uniform3fv( gl.getUniformLocation(shaderProgram, "ambientProduct"), 
+		flatten(ambientProduct) );
+    
+    gl.uniform3fv( gl.getUniformLocation(shaderProgram, "diffuseProduct"),
+        flatten(diffuseProduct) );
+    
+    gl.uniform3fv( gl.getUniformLocation(shaderProgram, "specularProduct"),
+        flatten(specularProduct) );
+
+	gl.uniform1f( gl.getUniformLocation(shaderProgram, "shininess"), 
+		nPhong );
+
+	//Position of the Light Source
+	
+	gl.uniform4fv( gl.getUniformLocation(shaderProgram, "lightPosition"),
+        flatten(pos_Light_Source) );
+
+	// Drawing 
 	
 	// primitiveType allows drawing as filled triangles / wireframe / vertices
 	
@@ -255,7 +263,92 @@ function drawScene() {
 				
 		gl.drawArrays(primitiveType, 0, triangleVertexPositionBuffer.numItems); 
 		
-	}       
+	}	
+}
+
+//----------------------------------------------------------------------------
+
+//  Drawing the 3D scene
+
+function drawScene() {
+	
+	var pMatrix;
+	
+	var mvMatrix = mat4();
+	
+	// Clearing the frame-buffer and the depth-buffer
+	
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	
+	// Computing the Projection Matrix
+	
+	if( projectionType == 0 ) {
+		
+		// For now, the default orthogonal view volume
+		
+		pMatrix = ortho( -1.0, 1.0, -1.0, 1.0, -1.0, 1.0 );
+		
+		// Global transformation !!
+		
+		globalTz = 0.0;
+		
+		// NEW --- The viewer is on the ZZ axis at an indefinite distance
+		
+		pos_Viewer[0] = pos_Viewer[1] = pos_Viewer[3] = 0.0;
+		
+		pos_Viewer[2] = 1.0;  
+		
+		// TO BE DONE !
+		
+		// Allow the user to control the size of the view volume
+	}
+	else {	
+
+		// A standard view volume.
+		
+		// Viewer is at (0,0,0)
+		
+		// Ensure that the model is "inside" the view volume
+		
+		pMatrix = perspective( 45, 1, 0.05, 15 );
+		
+		// Global transformation !!
+		
+		globalTz = -2.5;
+
+		// NEW --- The viewer is on (0,0,0)
+		
+		pos_Viewer[0] = pos_Viewer[1] = pos_Viewer[2] = 0.0;
+		
+		pos_Viewer[3] = 1.0;  
+		
+		// TO BE DONE !
+		
+		// Allow the user to control the size of the view volume
+	}
+	
+	// Passing the Projection Matrix to apply the current projection
+	
+	var pUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+	
+	gl.uniformMatrix4fv(pUniform, false, new Float32Array(flatten(pMatrix)));
+	
+	// NEW --- Passing the viewer position to the vertex shader
+	
+	gl.uniform4fv( gl.getUniformLocation(shaderProgram, "viewerPosition"),
+        flatten(pos_Viewer) );
+	
+	// GLOBAL TRANSFORMATION FOR THE WHOLE SCENE
+	
+	mvMatrix = translationMatrix( 0, 0, globalTz );
+	
+	// Instantianting the current model
+		
+	drawModel( angleXX, angleYY, angleZZ, 
+	           sx, sy, sz,
+	           tx, ty, tz,
+	           mvMatrix,
+	           primitiveType );
 }
 
 //----------------------------------------------------------------------------
@@ -275,19 +368,29 @@ function animate() {
 		
 		var elapsed = timeNow - lastTime;
 		
+		// Global rotation
+		
+		if( globalRotationYY_ON ) {
+
+			globalAngleYY += globalRotationYY_DIR * globalRotationYY_SPEED * (90 * elapsed) / 1000.0;
+	    }
+
+		// Local rotations
+		
+		if( rotationXX_ON ) {
+
+			angleXX += rotationXX_DIR * rotationXX_SPEED * (90 * elapsed) / 1000.0;
+	    }
+
 		if( rotationYY_ON ) {
 
 			angleYY += rotationYY_DIR * rotationYY_SPEED * (90 * elapsed) / 1000.0;
-		}
-		
-		// added
-		if ( rotationXX_ON ) {
-			angleXX += rotationXX_DIR * rotationXX_SPEED * (90 * elapsed) / 1000.0;
-		}
+	    }
 
-		if ( rotationZZ_ON ) {
+		if( rotationZZ_ON ) {
+
 			angleZZ += rotationZZ_DIR * rotationZZ_SPEED * (90 * elapsed) / 1000.0;
-		}
+	    }
 	}
 	
 	lastTime = timeNow;
@@ -308,38 +411,72 @@ function tick() {
 }
 
 
+
+
 //----------------------------------------------------------------------------
 //
 //  User Interaction
 //
 
 function outputInfos(){
-		
+    
 }
 
 //----------------------------------------------------------------------------
 
 function setEventListeners(){
 	
-	// Dropdown list
-	
-	var projection = document.getElementById("projection-selection");
-	
-	projection.addEventListener("click", function(){
-				
-		// Getting the selection
+    // Mesh subdivision buttons
+    
+    document.getElementById("mid-rec-depth-1-button").onclick = function(){
 		
-		var p = projection.selectedIndex;
-				
-		switch(p){
+        midPointRefinement( vertices, colors, 1 );
+        
+		// NEW --- Computing the triangle normal vector for every vertex
 			
-			case 0 : projectionType = 0;
-				break;
+		computeVertexNormals( vertices, normals );
 			
-			case 1 : projectionType = 1;
-				break;
-		}  	
-	});      
+        initBuffers();
+
+	};
+
+    document.getElementById("mid-rec-depth-2-button").onclick = function(){
+		
+        midPointRefinement( vertices, colors, 2 );
+    
+        // NEW --- Computing the triangle normal vector for every vertex
+			
+	    computeVertexNormals( vertices, normals );
+			
+        initBuffers();
+
+	};
+
+    document.getElementById("mid-rec-depth-3-button").onclick = function(){
+		
+        midPointRefinement( vertices, colors, 3 );
+    
+		// NEW --- Computing the triangle normal vector for every vertex
+			
+		computeVertexNormals( vertices, normals );
+			
+        initBuffers();
+
+	};
+
+    // Sphere approximation button
+    
+    document.getElementById("sphere-surf-button").onclick = function(){
+		
+        moveToSphericalSurface( vertices );
+    
+		// NEW --- Computing the triangle normal vector for every vertex
+			
+    	computeVertexNormals( vertices, normals );
+			
+        initBuffers();
+
+	};
 
 	// Dropdown list
 	
@@ -366,20 +503,6 @@ function setEventListeners(){
 
 	// Button events
 	
-	document.getElementById("YY-on-off-button").onclick = function(){
-		
-		// Switching on / off
-		
-		if( rotationYY_ON ) {
-			
-			rotationYY_ON = 0;
-		}
-		else {
-			
-			rotationYY_ON = 1;
-		}  
-	};
-
 	document.getElementById("XX-on-off-button").onclick = function(){
 		
 		// Switching on / off
@@ -394,18 +517,41 @@ function setEventListeners(){
 		}  
 	};
 
-
-	document.getElementById("ZZ-on-off-button").onclick = function(){
+	document.getElementById("XX-direction-button").onclick = function(){
 		
-		// Switching on / off
+		// Switching the direction
 		
-		if( rotationZZ_ON ) {
+		if( rotationXX_DIR == 1 ) {
 			
-			rotationZZ_ON = 0;
+			rotationXX_DIR = -1;
 		}
 		else {
 			
-			rotationZZ_ON = 1;
+			rotationXX_DIR = 1;
+		}  
+	};      
+
+	document.getElementById("XX-slower-button").onclick = function(){
+		
+		rotationXX_SPEED *= 0.75;  
+	};      
+
+	document.getElementById("XX-faster-button").onclick = function(){
+		
+		rotationXX_SPEED *= 1.25;  
+	};      
+
+	document.getElementById("YY-on-off-button").onclick = function(){
+		
+		// Switching on / off
+		
+		if( rotationYY_ON ) {
+			
+			rotationYY_ON = 0;
+		}
+		else {
+			
+			rotationYY_ON = 1;
 		}  
 	};
 
@@ -421,21 +567,31 @@ function setEventListeners(){
 			
 			rotationYY_DIR = 1;
 		}  
-	};
-	
-	document.getElementById("XX-direction-button").onclick = function(){
+	};      
+
+	document.getElementById("YY-slower-button").onclick = function(){
 		
-		// Switching the direction
+		rotationYY_SPEED *= 0.75;  
+	};      
+
+	document.getElementById("YY-faster-button").onclick = function(){
 		
-		if( rotationXX_DIR == 1 ) {
+		rotationYY_SPEED *= 1.25;  
+	};      
+
+	document.getElementById("ZZ-on-off-button").onclick = function(){
+		
+		// Switching on / off
+		
+		if( rotationZZ_ON ) {
 			
-			rotationXX_DIR = -1;
+			rotationZZ_ON = 0;
 		}
 		else {
 			
-			rotationXX_DIR = 1;
+			rotationZZ_ON = 1;
 		}  
-	}; 
+	};
 
 	document.getElementById("ZZ-direction-button").onclick = function(){
 		
@@ -449,37 +605,17 @@ function setEventListeners(){
 			
 			rotationZZ_DIR = 1;
 		}  
-	}; 
-
-	document.getElementById("YY-slower-button").onclick = function(){
-		
-		rotationYY_SPEED *= 0.75;  
-	};    
-	
-	document.getElementById("XX-slower-button").onclick = function(){
-		
-		rotationXX_SPEED *= 0.75;  
-	};  
+	};      
 
 	document.getElementById("ZZ-slower-button").onclick = function(){
 		
 		rotationZZ_SPEED *= 0.75;  
-	};  
-
-	document.getElementById("YY-faster-button").onclick = function(){
-		
-		rotationYY_SPEED *= 1.25;  
-	};   
-	
-	document.getElementById("XX-faster-button").onclick = function(){
-		
-		rotationXX_SPEED *= 1.25;  
-	};
+	};      
 
 	document.getElementById("ZZ-faster-button").onclick = function(){
 		
 		rotationZZ_SPEED *= 1.25;  
-	};
+	};      
 
 	document.getElementById("reset-button").onclick = function(){
 		
@@ -497,29 +633,29 @@ function setEventListeners(){
 
 		angleZZ = 0.0;
 
-		sx = 1.0;
+		sx = 0.5;
 
-		sy = 1.0;
+		sy = 0.5;
 
-		sz = 1.0;
+		sz = 0.5;
 		
+		rotationXX_ON = 0;
+		
+		rotationXX_DIR = 1;
+		
+		rotationXX_SPEED = 1;
+
 		rotationYY_ON = 0;
 		
 		rotationYY_DIR = 1;
 		
 		rotationYY_SPEED = 1;
-	};      
 
-	document.getElementById("face-culling-button").onclick = function(){
+		rotationZZ_ON = 0;
 		
-		if( gl.isEnabled( gl.CULL_FACE ) )
-		{
-			gl.disable( gl.CULL_FACE );
-		}
-		else
-		{
-			gl.enable( gl.CULL_FACE );
-		}
+		rotationZZ_DIR = 1;
+		
+		rotationZZ_SPEED = 1;
 	};      
 }
 
@@ -557,6 +693,10 @@ function initWebGL( canvas ) {
 		
 		gl.cullFace( gl.BACK );
 		
+		// Enable DEPTH-TEST
+		
+		gl.enable( gl.DEPTH_TEST );
+        
 	} catch (e) {
 	}
 	if (!gl) {
@@ -575,13 +715,14 @@ function runWebGL() {
 	shaderProgram = initShaders( gl );
 	
 	setEventListeners();
-
+	
 	initBuffers();
 	
 	tick();		// NEW --- A timer controls the rendering / animation    
 
 	outputInfos();
 }
+
 
 //----------------------------------------------------------------------------
 // The fractal code
@@ -594,9 +735,9 @@ function computeSierpinskiGasket() {
     var v4 = [  0.0, -1.0,  0.707 ];
 
 	vertices = [];
-	vertexNormals = [];
+	normals = [];
 	divideTetrahedron(v1, v2, v3, v4, numLevels);
-	//computeVertexNormals(vertices, vertexNormals);
+	computeVertexNormals(vertices, normals);
     //vertices = flatten( vertices );
 }
 
@@ -634,14 +775,16 @@ function computeKochSnowflake() {
 		
 		// Initial vertices of the Tetrahedron
 		
+		
 		var v1 = [ -1.0,  0.0, -0.707 ];
 		var v2 = [  0.0,  1.0,  0.707 ];
 		var v3 = [  1.0,  0.0, -0.707 ];
 		var v4 = [  0.0, -1.0,  0.707 ];
-		
+      	  
 		// Clearing the vertices array;
 		
 		vertices = [];
+		normals = [];
 		//var face1 = [ v1, v2, v3 ];
 		//var face2 = [v3, v2, v4]
         //var face3 = [v4, v2, v1]
@@ -655,6 +798,7 @@ function computeKochSnowflake() {
 		divideFace( v1, v3, v4, numLevels );
 		
 		addVertexes ( v1, v2, v3, v4);
+		computeVertexNormals(vertices, normals);
 		
 	}
 	
@@ -712,7 +856,7 @@ function divideFace( v1, v2, v3, n )
 			//divideFace( v2, vb, va, n );
 			//divideFace( v3, vc, vb, n );
 
-			addVertexes(va, vb, vc, vH);			
+			addVertexes(vc, vb, va, vH);			
 		}
 	}
 	
@@ -750,4 +894,167 @@ function computeDistance (v1, v2)
     var res = Math.sqrt( squaresSum );
 	
 	return res;
+}
+
+//--------------------------------------------------------------------------------//
+//Mosely snowflake																  //
+//--------------------------------------------------------------------------------//
+function computeMosely()
+{
+	//define cube
+	// vertices do cubo
+	 var v1 = [-1, -1, 1];       
+
+    var v2 = [1, -1, 1];        
+        
+    var v3 = [1, 1, 1];     
+
+    var v4 = [-1, 1, 1];        
+    
+    var v5 = [-1, -1, -1];  
+
+    var v6 = [1, -1, -1];       
+
+    var v7 = [1, 1, -1];        
+
+    var v8 = [-1, 1, -1];
+	
+	vertices = [];
+	normals = [];
+	generateMosely(v1, v2, v3, v4, v5, v6, v7, v8, numLevels);
+	computeVertexNormals(vertices, normals);
+}
+
+function defineCube(v1, v2, v3, v4, v5, v6, v7, v8)
+{
+	var toAdd = [].concat(v1, v2, v3,
+                            v1, v3, v4,
+                            v5, v8, v7,
+                            v5, v7, v6,
+                            v8, v4, v3,
+                            v8, v3, v7,
+                            v5, v6, v2,
+                            v5, v2, v1,
+                            v6, v7, v3,
+                            v6, v3, v2,
+                            v5, v1, v4,
+                            v5, v4, v8);
+        for (var i = 0; i < toAdd.length; i += 1) {
+            vertices.push(toAdd[i]);
+        }
+}
+// Auxiliary function for point interpolation --- Angel / Shreiner
+	
+function interpolate( u, v, s )
+{
+	// No imput checking!!
+		
+	var result = [];
+	for ( var i = 0; i < u.length; ++i ) {
+		result.push( (1.0 - s) * u[i] +  s * v[i] );
+	}
+
+	return result;
+}
+function generateMosely(v1, v2, v3, v4, v5, v6, v7, v8, n)
+{
+	if(n==0)
+	{
+		defineCube(v1, v2, v3, v4, v5, v6, v7, v8);
+	}
+	else
+	{
+		n = n - 1;
+		
+		var v12 = interpolate(v1, v2, 0.33);
+		var v13 = interpolate(v1, v3, 0.33);
+		var v14 = interpolate(v1, v4, 0.33);
+		var v15 = interpolate(v1, v5, 0.33);
+		var v16 = interpolate(v1, v6, 0.33);
+		var v17 = interpolate(v1, v7, 0.33);
+		var v18 = interpolate(v1, v8, 0.33);
+		
+		var v21 = interpolate(v2, v1, 0.33);
+		var v23 = interpolate(v2, v3, 0.33);
+		var v24 = interpolate(v2, v4, 0.33);
+		var v25 = interpolate(v2, v5, 0.33);
+		var v26 = interpolate(v2, v6, 0.33);
+		var v27 = interpolate(v2, v7, 0.33);
+		var v28 = interpolate(v2, v8, 0.33);
+		
+		var v31 = interpolate(v3, v1, 0.33);
+		var v32 = interpolate(v3, v2, 0.33);
+		var v34 = interpolate(v3, v4, 0.33);
+		var v35 = interpolate(v3, v5, 0.33);
+		var v36 = interpolate(v3, v6, 0.33);
+		var v37 = interpolate(v3, v7, 0.33);
+		var v38 = interpolate(v3, v8, 0.33);
+		
+		var v41 = interpolate(v4, v1, 0.33);
+		var v42 = interpolate(v4, v2, 0.33);
+		var v43 = interpolate(v4, v3, 0.33);
+		var v45 = interpolate(v4, v5, 0.33);
+		var v46 = interpolate(v4, v6, 0.33);
+		var v47 = interpolate(v4, v7, 0.33);
+		var v48 = interpolate(v4, v8, 0.33);
+		
+		var v51 = interpolate(v5, v1, 0.33);
+		var v52 = interpolate(v5, v2, 0.33);
+		var v53 = interpolate(v5, v3, 0.33);
+		var v54 = interpolate(v5, v4, 0.33);
+		var v56 = interpolate(v5, v6, 0.33);
+		var v57 = interpolate(v5, v7, 0.33);
+		var v58 = interpolate(v5, v8, 0.33);
+		
+		var v61 = interpolate(v6, v1, 0.33);
+		var v62 = interpolate(v6, v2, 0.33);
+		var v64 = interpolate(v6, v4, 0.33);
+		var v65 = interpolate(v6, v5, 0.33);
+		var v63 = interpolate(v6, v3, 0.33);
+		var v67 = interpolate(v6, v7, 0.33);
+		var v68 = interpolate(v6, v8, 0.33);
+		
+		var v71 = interpolate(v7, v1, 0.33);
+		var v72 = interpolate(v7, v2, 0.33);
+		var v74 = interpolate(v7, v4, 0.33);
+		var v75 = interpolate(v7, v5, 0.33);
+		var v76 = interpolate(v7, v6, 0.33);
+		var v73 = interpolate(v7, v3, 0.33);
+		var v78 = interpolate(v7, v8, 0.33);
+		
+		var v81 = interpolate(v8, v1, 0.33);
+		var v82 = interpolate(v8, v2, 0.33);
+		var v84 = interpolate(v8, v4, 0.33);
+		var v85 = interpolate(v8, v5, 0.33);
+		var v86 = interpolate(v8, v6, 0.33);
+		var v87 = interpolate(v8, v7, 0.33);
+		var v83 = interpolate(v8, v3, 0.33);
+		
+		
+		//vertex # 	    1    2    3    4    5    6    7    8
+		generateMosely(v12, v21, v24, v13, v16, v25, v28, v17, n);
+		generateMosely(v24, v23, v32, v31, v28, v27, v36, v35, n);
+		generateMosely(v42, v31, v34, v43, v46, v35, v38, v47, n);
+		generateMosely(v14, v13, v42, v41, v18, v17, v46, v45, n);
+		generateMosely(v13, v24, v31, v42, v17, v28, v35, v46, n);
+			
+		generateMosely(v52, v61, v64, v53, v56, v65, v68, v57, n);
+		generateMosely(v64, v63, v72, v71, v68, v67, v76, v75, n);
+		generateMosely(v82, v71, v74, v83, v86, v75, v78, v87, n);
+		generateMosely(v54, v53, v82, v81, v58, v57, v86, v85, n);
+		generateMosely(v53, v64, v71, v82, v57, v68, v75, v86, n);
+		
+		generateMosely(v15, v16, v17, v18, v51, v52, v53, v54, n);
+		generateMosely(v25, v26, v27, v28, v61, v62, v63, v64, n);
+		generateMosely(v16, v25, v28, v17, v52, v61, v64, v53, n);
+		
+		generateMosely(v35, v36, v37, v38, v71, v72, v73, v74, n);
+		generateMosely(v45, v46, v47, v48, v81, v82, v83, v84, n);
+		generateMosely(v46, v35, v38, v47, v82, v71, v74, v83, n); 
+		
+		generateMosely(v18, v17, v46, v45, v54, v53, v82, v81, n);
+		
+		generateMosely(v46, v35, v38, v47, v82, v71, v74, v83, n);
+		generateMosely(v28, v27, v36, v35, v64, v63, v72, v71, n);	
+	}
 }
