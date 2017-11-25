@@ -35,9 +35,9 @@ var tz = 0.0;
 
 // The rotation angles in degrees
 
-var angleXX = 0.0;
+var angleXX = -22.5;
 
-var angleYY = 0.0;
+var angleYY = 16.0;
 
 var angleZZ = 0.0;
 
@@ -513,13 +513,13 @@ function handleMouseMove(event) {
 
     var deltaX = newX - lastMouseX;
     
-    angleYY += radians( 10 * deltaX  )
+    angleYY += radians( 10 * deltaX  );
 
     var deltaY = newY - lastMouseY;
     
-    angleXX += radians( 10 * deltaY  )
+    angleXX += radians( 10 * deltaY  );
     
-    lastMouseX = newX
+    lastMouseX = newX;
     
     lastMouseY = newY;
 }
@@ -740,9 +740,9 @@ function setEventListeners() {
 
 		// The rotation angles in degrees
 
-		angleXX = 0.0;
+		angleXX = -22.5;
 
-		angleYY = 0.0;
+		angleYY = 16.0;
 
 		angleZZ = 0.0;
 
