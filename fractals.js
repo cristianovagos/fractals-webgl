@@ -164,6 +164,10 @@ function initBuffers() {
 		case 4 :
 			computeJerusalemCube();
 			break;
+			
+		case 5 :
+			computeCantorDust();
+			break;
 	}
 	
 	triangleVertexPositionBuffer = gl.createBuffer();
@@ -597,6 +601,11 @@ function setEventListeners() {
 				fractalSelected = 4;
 				computeJerusalemCube();
 				break;
+			
+			case 5 :
+				fractalSelected = 5;
+				computeCantorDust();
+				break;
 		}
 		
 	});   
@@ -781,21 +790,25 @@ function setEventListeners() {
 			computeSierpinskiGasket();
 			break;
 		
-		case 1 : 
-			computeKochSnowflake();
-			break;
-		
-		case 2 :
-			computeMosely();
-			break;
+			case 1 : 
+				computeKochSnowflake();
+				break;
+			
+			case 2 :
+				computeMosely();
+				break;
 
-		case 3 : 
-			computeMengerSponge();
-			break;
-		
-		case 4 :
-			computeJerusalemCube();
-			break;
+			case 3 : 
+				computeMengerSponge();
+				break;
+			
+			case 4 :
+				computeJerusalemCube();
+				break;
+			
+			case 5 :
+				computeCantorDust();
+				break;
 
 		}
 
@@ -1723,5 +1736,125 @@ function jerusalemCube(v1, v2, v3, v4, v5, v6, v7, v8, recursionLevel) {
 		jerusalemCube(back_bot_left_1, back_bot_left_2, back_bot_left_3, back_bot_left_4, back_bot_left_5, back_bot_left_6, back_bot_left_7, back_bot_left_8, recursionLevel);
 		jerusalemCube(back_bot_center_1, back_bot_center_2, back_bot_center_3, back_bot_center_4, back_bot_center_5, back_bot_center_6, back_bot_center_7, back_bot_center_8, recursionLevel);
 		jerusalemCube(back_bot_right_1, back_bot_right_2, back_bot_right_3, back_bot_right_4, back_bot_right_5, back_bot_right_6, back_bot_right_7, back_bot_right_8, recursionLevel);
+	}
+}
+
+function computeCantorDust () {
+	var v1 = [-1, -1, 1];       
+	
+	var v2 = [1, -1, 1];        
+		
+	var v3 = [1, 1, 1];     
+
+	var v4 = [-1, 1, 1];        
+	
+	var v5 = [-1, -1, -1];  
+
+	var v6 = [1, -1, -1];       
+
+	var v7 = [1, 1, -1];        
+
+	var v8 = [-1, 1, -1];
+	
+	vertices = [];
+	normals = [];
+	cantorDust(v1, v2, v3, v4, v5, v6, v7, v8, numLevels);
+	computeVertexNormals(vertices, normals);
+}
+
+function cantorDust(v1, v2, v3, v4, v5, v6, v7, v8, recursionLevel) {	
+	if(recursionLevel < 1) {
+		defineCube(v1, v2, v3, v4, v5, v6, v7, v8);
+	}
+	else {
+		recursionLevel--;
+		
+		// -- Divide every face into 9 equally sized squares --
+		var distance = computeDistance(v3, v4);
+		var newDistance = distance / 3;
+		
+		// Front face cubes
+		var front_top_left_1 = [v3[0] - distance, v3[1] - newDistance, v3[2]];
+		var front_top_left_2 = [v3[0] - (2*newDistance), v3[1] - newDistance, v3[2]];
+		var front_top_left_3 = [v3[0] - (2*newDistance), v3[1], v3[2]];
+		var front_top_left_4 = [v3[0] - distance, v3[1], v3[2]];
+		var front_top_left_5 = [front_top_left_1[0], front_top_left_1[1], front_top_left_1[2] - newDistance];
+		var front_top_left_6 = [front_top_left_2[0], front_top_left_2[1], front_top_left_2[2] - newDistance];
+		var front_top_left_7 = [front_top_left_3[0], front_top_left_3[1], front_top_left_3[2] - newDistance];
+		var front_top_left_8 = [front_top_left_4[0], front_top_left_4[1], front_top_left_4[2] - newDistance];
+		
+		var front_top_right_1 = [v3[0] - newDistance, v3[1]-newDistance, v3[2]];;
+		var front_top_right_2 = [v3[0], v3[1]-newDistance, v3[2]];
+		var front_top_right_3 = v3;
+		var front_top_right_4 = [v3[0] - newDistance, v3[1], v3[2]];;
+		var front_top_right_5 = [front_top_right_1[0], front_top_right_1[1], front_top_right_1[2] - newDistance];
+		var front_top_right_6 = [front_top_right_2[0], front_top_right_2[1], front_top_right_2[2] - newDistance];
+		var front_top_right_7 = [front_top_right_3[0], front_top_right_3[1], front_top_right_3[2] - newDistance];
+		var front_top_right_8 = [front_top_right_4[0], front_top_right_4[1], front_top_right_4[2] - newDistance];
+		
+		var front_bot_left_1 = [v1[0], v1[1], v1[2]];
+		var front_bot_left_2 = [v1[0] + newDistance, v1[1], v1[2]];
+		var front_bot_left_3 = [v3[0] - (2*newDistance), v3[1]-(2*newDistance), v3[2]];
+		var front_bot_left_4 = [v3[0] - distance, v3[1]-(2*newDistance), v3[2]];
+		var front_bot_left_5 = [front_bot_left_1[0], front_bot_left_1[1], front_bot_left_1[2] - newDistance];
+		var front_bot_left_6 = [front_bot_left_2[0], front_bot_left_2[1], front_bot_left_2[2] - newDistance];
+		var front_bot_left_7 = [front_bot_left_3[0], front_bot_left_3[1], front_bot_left_3[2] - newDistance];
+		var front_bot_left_8 = [front_bot_left_4[0], front_bot_left_4[1], front_bot_left_4[2] - newDistance];
+
+		var front_bot_right_1 = [v3[0] - newDistance, v3[1]-distance, v3[2]];;
+		var front_bot_right_2 = v2;
+		var front_bot_right_3 = [v3[0], v3[1]-(2*newDistance), v3[2]];;
+		var front_bot_right_4 = [v3[0] - newDistance, v3[1]-(2*newDistance), v3[2]];
+		var front_bot_right_5 = [front_bot_right_1[0], front_bot_right_1[1], front_bot_right_1[2] - newDistance];
+		var front_bot_right_6 = [front_bot_right_2[0], front_bot_right_2[1], front_bot_right_2[2] - newDistance];
+		var front_bot_right_7 = [front_bot_right_3[0], front_bot_right_3[1], front_bot_right_3[2] - newDistance];;
+		var front_bot_right_8 = [front_bot_right_4[0], front_bot_right_4[1], front_bot_right_4[2] - newDistance];;
+
+		// Back cubes
+		var back_top_left_1 = [front_top_left_1[0], front_top_left_1[1], front_top_left_1[2]-(2*newDistance)];
+		var back_top_left_2 = [front_top_left_2[0], front_top_left_2[1], front_top_left_2[2]-(2*newDistance)];
+		var back_top_left_3 = [front_top_left_3[0], front_top_left_3[1], front_top_left_3[2]-(2*newDistance)];
+		var back_top_left_4 = [front_top_left_4[0], front_top_left_4[1], front_top_left_4[2]-(2*newDistance)];
+		var back_top_left_5 = [back_top_left_1[0], back_top_left_1[1], back_top_left_1[2] - newDistance];
+		var back_top_left_6 = [back_top_left_2[0], back_top_left_2[1], back_top_left_2[2] - newDistance];
+		var back_top_left_7 = [back_top_left_3[0], back_top_left_3[1], back_top_left_3[2] - newDistance];
+		var back_top_left_8 = [back_top_left_4[0], back_top_left_4[1], back_top_left_4[2] - newDistance];
+
+		var back_top_right_1 = [front_top_right_1[0], front_top_right_1[1], front_top_right_1[2]-(2*newDistance)];
+		var back_top_right_2 = [front_top_right_2[0], front_top_right_2[1], front_top_right_2[2]-(2*newDistance)];
+		var back_top_right_3 = [front_top_right_3[0], front_top_right_3[1], front_top_right_3[2]-(2*newDistance)];
+		var back_top_right_4 = [front_top_right_4[0], front_top_right_4[1], front_top_right_4[2]-(2*newDistance)];
+		var back_top_right_5 = [back_top_right_1[0], back_top_right_1[1], back_top_right_1[2] - newDistance];
+		var back_top_right_6 = [back_top_right_2[0], back_top_right_2[1], back_top_right_2[2] - newDistance];
+		var back_top_right_7 = [back_top_right_3[0], back_top_right_3[1], back_top_right_3[2] - newDistance];
+		var back_top_right_8 = [back_top_right_4[0], back_top_right_4[1], back_top_right_4[2] - newDistance];
+
+		var back_bot_left_1 = [front_bot_left_1[0], front_bot_left_1[1], front_bot_left_1[2]-(2*newDistance)];
+		var back_bot_left_2 = [front_bot_left_2[0], front_bot_left_2[1], front_bot_left_2[2]-(2*newDistance)];
+		var back_bot_left_3 = [front_bot_left_3[0], front_bot_left_3[1], front_bot_left_3[2]-(2*newDistance)];
+		var back_bot_left_4 = [front_bot_left_4[0], front_bot_left_4[1], front_bot_left_4[2]-(2*newDistance)];
+		var back_bot_left_5 = [back_bot_left_1[0], back_bot_left_1[1], back_bot_left_1[2] - newDistance];
+		var back_bot_left_6 = [back_bot_left_2[0], back_bot_left_2[1], back_bot_left_2[2] - newDistance];
+		var back_bot_left_7 = [back_bot_left_3[0], back_bot_left_3[1], back_bot_left_3[2] - newDistance];
+		var back_bot_left_8 = [back_bot_left_4[0], back_bot_left_4[1], back_bot_left_4[2] - newDistance];
+
+		var back_bot_right_1 = [front_bot_right_1[0], front_bot_right_1[1], front_bot_right_1[2]-(2*newDistance)];
+		var back_bot_right_2 = [front_bot_right_2[0], front_bot_right_2[1], front_bot_right_2[2]-(2*newDistance)];
+		var back_bot_right_3 = [front_bot_right_3[0], front_bot_right_3[1], front_bot_right_3[2]-(2*newDistance)];
+		var back_bot_right_4 = [front_bot_right_4[0], front_bot_right_4[1], front_bot_right_4[2]-(2*newDistance)];
+		var back_bot_right_5 = [back_bot_right_1[0], back_bot_right_1[1], back_bot_right_1[2] - newDistance];
+		var back_bot_right_6 = [back_bot_right_2[0], back_bot_right_2[1], back_bot_right_2[2] - newDistance];
+		var back_bot_right_7 = [back_bot_right_3[0], back_bot_right_3[1], back_bot_right_3[2] - newDistance];
+		var back_bot_right_8 = [back_bot_right_4[0], back_bot_right_4[1], back_bot_right_4[2] - newDistance];
+		
+		cantorDust(front_top_left_1, front_top_left_2, front_top_left_3, front_top_left_4, front_top_left_5, front_top_left_6, front_top_left_7, front_top_left_8, recursionLevel);
+		cantorDust(front_top_right_1, front_top_right_2, front_top_right_3, front_top_right_4, front_top_right_5, front_top_right_6, front_top_right_7, front_top_right_8, recursionLevel);
+		cantorDust(front_bot_left_1, front_bot_left_2, front_bot_left_3, front_bot_left_4, front_bot_left_5, front_bot_left_6, front_bot_left_7, front_bot_left_8, recursionLevel);
+		cantorDust(front_bot_right_1, front_bot_right_2, front_bot_right_3, front_bot_right_4, front_bot_right_5, front_bot_right_6, front_bot_right_7, front_bot_right_8, recursionLevel);
+		
+		cantorDust(back_top_left_1, back_top_left_2, back_top_left_3, back_top_left_4, back_top_left_5, back_top_left_6, back_top_left_7, back_top_left_8, recursionLevel);
+		cantorDust(back_top_right_1, back_top_right_2, back_top_right_3, back_top_right_4, back_top_right_5, back_top_right_6, back_top_right_7, back_top_right_8, recursionLevel);
+		cantorDust(back_bot_left_1, back_bot_left_2, back_bot_left_3, back_bot_left_4, back_bot_left_5, back_bot_left_6, back_bot_left_7, back_bot_left_8, recursionLevel);
+		cantorDust(back_bot_right_1, back_bot_right_2, back_bot_right_3, back_bot_right_4, back_bot_right_5, back_bot_right_6, back_bot_right_7, back_bot_right_8, recursionLevel);
 	}
 }
