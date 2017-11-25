@@ -677,3 +677,7 @@ function multiplyVectorByMatrix( m, p )
 	
 	return result;
 }
+
+function distance2Points(p0, p1) {
+    return Math.sqrt(Math.pow((p1[0]-p0[0]), 2)+Math.pow((p1[1]-p0[1]), 2)+Math.pow((p1[2]-p0[2]), 2));
+}

@@ -3,7 +3,11 @@
 //
 // Global Variables
 //
-var numLevels = 4;
+var canvas = null;
+
+var numLevels = 0;
+
+var fractalSelected = 0;
 
 var gl = null; // WebGL context
 
@@ -55,19 +59,19 @@ var globalRotationYY_SPEED = 1;
 
 // Local Animation controls
 
-var rotationXX_ON = 1;
+var rotationXX_ON = 0;
 
 var rotationXX_DIR = 1;
 
 var rotationXX_SPEED = 1;
  
-var rotationYY_ON = 1;
+var rotationYY_ON = 0;
 
 var rotationYY_DIR = 1;
 
 var rotationYY_SPEED = 1;
  
-var rotationZZ_ON = 1;
+var rotationZZ_ON = 0;
 
 var rotationZZ_DIR = 1;
 
@@ -109,7 +113,7 @@ var kAmbi = [ 0.2, 0.2, 0.2 ];
 
 // Diffuse coef.
 
-var kDiff = [ 0.0, 0.0, 0.6 ];
+var kDiff = [ 0.2, 0.48, 0.72 ]; // COLOR
 
 // Specular coef.
 
@@ -140,11 +144,27 @@ var normals = [ ];
 
 function initBuffers() {	
 	
-	// Vertex Coordinates
-	//computeSierpinskiGasket();
-	computeKochSnowflake();
-	//computeMosely();
-	//console.log(vertices);
+	switch(fractalSelected) {
+		case 0 : 
+			computeSierpinskiGasket();
+			break;
+	
+		case 1 : 
+			computeKochSnowflake();
+			break;
+		
+		case 2 :
+			computeMosely();
+			break;
+
+		case 3 : 
+			computeMengerSponge();
+			break;
+		
+		case 4 :
+			computeJerusalemCube();
+			break;
+	}
 	
 	triangleVertexPositionBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
@@ -422,61 +442,85 @@ function outputInfos(){
     
 }
 
+function updateColor(color) {
+
+	color = '#' + color;
+
+	var r = hexToR(color);
+	var g = hexToG(color);
+	var b = hexToB(color);
+
+	r /= 255;
+	g /= 255;
+	b /= 255;
+
+	kDiff = [r, g, b];
+}
+
+// Hex to RGB Parser
+// Retired from: http://www.javascripter.net/faq/hextorgb.htm
+
+function hexToR(h) {return parseInt((cutHex(h)).substring(0,2),16)}
+function hexToG(h) {return parseInt((cutHex(h)).substring(2,4),16)}
+function hexToB(h) {return parseInt((cutHex(h)).substring(4,6),16)}
+function cutHex(h) {return (h.charAt(0)=="#") ? h.substring(1,7):h}
+
 //----------------------------------------------------------------------------
 
-function setEventListeners(){
-	
-    // Mesh subdivision buttons
+//----------------------------------------------------------------------------
+
+// Handling mouse events
+
+// Adapted from www.learningwebgl.com
+
+
+var mouseDown = false;
+
+var lastMouseX = null;
+
+var lastMouseY = null;
+
+function handleMouseDown(event) {
     
-    document.getElementById("mid-rec-depth-1-button").onclick = function(){
-		
-        midPointRefinement( vertices, colors, 1 );
-        
-		// NEW --- Computing the triangle normal vector for every vertex
-			
-		computeVertexNormals( vertices, normals );
-			
-        initBuffers();
+    mouseDown = true;
+  
+    lastMouseX = event.clientX;
+  
+    lastMouseY = event.clientY;
+}
 
-	};
+function handleMouseUp(event) {
 
-    document.getElementById("mid-rec-depth-2-button").onclick = function(){
-		
-        midPointRefinement( vertices, colors, 2 );
+    mouseDown = false;
+}
+
+function handleMouseMove(event) {
+
+    if (!mouseDown) {
+      
+      return;
+    } 
+  
+    // Rotation angles proportional to cursor displacement
     
-        // NEW --- Computing the triangle normal vector for every vertex
-			
-	    computeVertexNormals( vertices, normals );
-			
-        initBuffers();
+    var newX = event.clientX;
+  
+    var newY = event.clientY;
 
-	};
-
-    document.getElementById("mid-rec-depth-3-button").onclick = function(){
-		
-        midPointRefinement( vertices, colors, 3 );
+    var deltaX = newX - lastMouseX;
     
-		// NEW --- Computing the triangle normal vector for every vertex
-			
-		computeVertexNormals( vertices, normals );
-			
-        initBuffers();
+    angleYY += radians( 10 * deltaX  )
 
-	};
-
-    // Sphere approximation button
+    var deltaY = newY - lastMouseY;
     
-    document.getElementById("sphere-surf-button").onclick = function(){
-		
-        moveToSphericalSurface( vertices );
+    angleXX += radians( 10 * deltaY  )
     
-		// NEW --- Computing the triangle normal vector for every vertex
-			
-    	computeVertexNormals( vertices, normals );
-			
-        initBuffers();
+    lastMouseX = newX
+    
+    lastMouseY = newY;
+}
 
-	};
+function setEventListeners() {
 
 	// Dropdown list
 	
@@ -499,7 +543,63 @@ function setEventListeners(){
 			case 2 : primitiveType = gl.POINTS;
 				break;
 		}
-	});      
+	});
+
+	var projectionList = document.getElementById("projection-selection");
+	
+	projectionList.addEventListener("click", function(){
+				
+		// Getting the selection
+		
+		var p = projectionList.selectedIndex;
+		
+		switch(p){
+			
+			case 0 : projectionType = 0;
+				break;
+			
+			case 1 : projectionType = 1;
+				break;
+		}  
+	});
+	
+	var fractalList = document.getElementById("fractal-selection");
+	
+	fractalList.addEventListener("click", function(){
+				
+		// Getting the selection
+		
+		var mode = fractalList.selectedIndex;
+				
+		switch(mode){
+			
+			case 0 : 
+				fractalSelected = 0;
+				computeSierpinskiGasket();
+				break;
+			
+			case 1 : 
+				fractalSelected = 1;
+				computeKochSnowflake();
+				break;
+			
+			case 2 :
+				fractalSelected = 2;
+				computeMosely();
+				break;
+
+			case 3 : 
+				fractalSelected = 3;
+				computeMengerSponge();
+				break;
+			
+			case 4 :
+				fractalSelected = 4;
+				computeJerusalemCube();
+				break;
+		}
+		
+	});   
 
 	// Button events
 	
@@ -621,11 +721,15 @@ function setEventListeners(){
 		
 		// The initial values
 
+		// The translation vector
+
 		tx = 0.0;
 
 		ty = 0.0;
 
 		tz = 0.0;
+
+		// The rotation angles in degrees
 
 		angleXX = 0.0;
 
@@ -633,30 +737,102 @@ function setEventListeners(){
 
 		angleZZ = 0.0;
 
+		// The scaling factors
+
 		sx = 0.5;
 
 		sy = 0.5;
 
 		sz = 0.5;
 		
+		// Local Animation controls
+
 		rotationXX_ON = 0;
-		
+
 		rotationXX_DIR = 1;
-		
+
 		rotationXX_SPEED = 1;
-
+		
 		rotationYY_ON = 0;
-		
-		rotationYY_DIR = 1;
-		
-		rotationYY_SPEED = 1;
 
+		rotationYY_DIR = 1;
+
+		rotationYY_SPEED = 1;
+		
 		rotationZZ_ON = 0;
-		
+
 		rotationZZ_DIR = 1;
-		
+
 		rotationZZ_SPEED = 1;
-	};      
+		
+		projectionType = 0;
+
+		kDiff = [ 0.2, 0.48, 0.72 ]; // COLOR
+
+		initBuffers();
+	};
+
+	document.getElementById("add-recursion-button").onclick = function(){
+		numLevels = numLevels+1;
+		document.getElementById("num-iterations").innerHTML = numLevels;
+
+		switch(fractalSelected) {
+			case 0 : 
+			computeSierpinskiGasket();
+			break;
+		
+		case 1 : 
+			computeKochSnowflake();
+			break;
+		
+		case 2 :
+			computeMosely();
+			break;
+
+		case 3 : 
+			computeMengerSponge();
+			break;
+		
+		case 4 :
+			computeJerusalemCube();
+			break;
+
+		}
+
+		initBuffers();
+	}; 
+
+	document.getElementById("reduce-recursion-button").onclick = function(){
+		if (numLevels > 0){
+			numLevels = numLevels-1;
+			document.getElementById("num-iterations").innerHTML = numLevels;
+		}
+		initBuffers();
+	};
+
+	canvas.onmousedown = handleMouseDown;
+    
+    document.onmouseup = handleMouseUp;
+    
+	document.onmousemove = handleMouseMove;
+	
+	// Roda do rato
+	canvas.addEventListener('wheel', function(event) {
+		if(event.deltaY > 0) {
+			// Aproxima
+			sx -= 0.1;
+			sy -= 0.1;
+			sz -= 0.1;
+		} 
+		else {
+			// Afasta
+			sx += 0.1;
+			sy += 0.1;
+			sz += 0.1;
+		}
+
+		drawScene();
+	}, false);
 }
 
 //----------------------------------------------------------------------------
@@ -708,7 +884,7 @@ function initWebGL( canvas ) {
 
 function runWebGL() {
 	
-	var canvas = document.getElementById("my-canvas");
+	canvas = document.getElementById("my-canvas");
 	
 	initWebGL( canvas );
 
@@ -742,7 +918,7 @@ function computeSierpinskiGasket() {
 }
 
 function divideTetrahedron(v1, v2, v3, v4, recursionLevel) {
-	if (recursionLevel < 2) {
+	if (recursionLevel == 0) {
 		var coordinatesToAdd = [].concat(v1, v2, v3,
             v3, v2, v4,
             v4, v2, v1,
@@ -840,7 +1016,7 @@ function divideFace( v1, v2, v3, n )
 			normalVector[2] = normalVector[2] * height;
 			
 			var vH = addVector(midpoint, normalVector);
-			console.log(normalVector);
+			//console.log(normalVector);
 			// TESTING
 			
 			//var v2 = midpoint;
@@ -928,17 +1104,17 @@ function computeMosely()
 function defineCube(v1, v2, v3, v4, v5, v6, v7, v8)
 {
 	var toAdd = [].concat(v1, v2, v3,
-                            v1, v3, v4,
-                            v5, v8, v7,
-                            v5, v7, v6,
-                            v8, v4, v3,
-                            v8, v3, v7,
-                            v5, v6, v2,
-                            v5, v2, v1,
-                            v6, v7, v3,
-                            v6, v3, v2,
-                            v5, v1, v4,
-                            v5, v4, v8);
+                          v1, v3, v4,
+                          v5, v8, v7,
+                          v5, v7, v6,
+                          v8, v4, v3,
+                          v8, v3, v7,
+                          v5, v6, v2,
+                          v5, v2, v1,
+                          v6, v7, v3,
+                          v6, v3, v2,
+                          v5, v1, v4,
+                          v5, v4, v8);
         for (var i = 0; i < toAdd.length; i += 1) {
             vertices.push(toAdd[i]);
         }
@@ -1056,5 +1232,496 @@ function generateMosely(v1, v2, v3, v4, v5, v6, v7, v8, n)
 		
 		generateMosely(v46, v35, v38, v47, v82, v71, v74, v83, n);
 		generateMosely(v28, v27, v36, v35, v64, v63, v72, v71, n);	
+	}
+}
+
+
+//--------------------------------------------------------------------//
+// Cube Menger Sponge
+
+function computeMengerSponge() {
+	var v1 = [-1, -1, 1];       
+	
+	var v2 = [1, -1, 1];        
+		
+	var v3 = [1, 1, 1];     
+
+	var v4 = [-1, 1, 1];        
+	
+	var v5 = [-1, -1, -1];  
+
+	var v6 = [1, -1, -1];       
+
+	var v7 = [1, 1, -1];        
+
+	var v8 = [-1, 1, -1];
+	
+	vertices = [];
+	normals = [];
+	mengerSponge(v1, v2, v3, v4, v5, v6, v7, v8, numLevels);
+	computeVertexNormals(vertices, normals);
+}
+
+function mengerSponge(v1, v2, v3, v4, v5, v6, v7, v8, recursionLevel) {	
+	if(recursionLevel < 1) {
+		defineCube(v1, v2, v3, v4, v5, v6, v7, v8);
+	}
+	else {
+		recursionLevel--;
+		
+		// -- Divide every face into 9 equally sized squares --
+		var distance = computeDistance(v3, v4);
+		var newDistance = distance / 3;
+		
+		// Front face cubes
+		var front_top_left_1 = [v3[0] - distance, v3[1] - newDistance, v3[2]];
+		var front_top_left_2 = [v3[0] - (2*newDistance), v3[1] - newDistance, v3[2]];
+		var front_top_left_3 = [v3[0] - (2*newDistance), v3[1], v3[2]];
+		var front_top_left_4 = [v3[0] - distance, v3[1], v3[2]];
+		var front_top_left_5 = [front_top_left_1[0], front_top_left_1[1], front_top_left_1[2] - newDistance];
+		var front_top_left_6 = [front_top_left_2[0], front_top_left_2[1], front_top_left_2[2] - newDistance];
+		var front_top_left_7 = [front_top_left_3[0], front_top_left_3[1], front_top_left_3[2] - newDistance];
+		var front_top_left_8 = [front_top_left_4[0], front_top_left_4[1], front_top_left_4[2] - newDistance];
+
+		var front_top_center_1 = front_top_left_2;
+		var front_top_center_2 = [v3[0] - newDistance, v3[1]-newDistance, v3[2]];
+		var front_top_center_3 = [v3[0] - newDistance, v3[1], v3[2]];
+		var front_top_center_4 = front_top_left_3;
+		var front_top_center_5 = [front_top_center_1[0], front_top_center_1[1], front_top_center_1[2] - newDistance];
+		var front_top_center_6 = [front_top_center_2[0], front_top_center_2[1], front_top_center_2[2] - newDistance];
+		var front_top_center_7 = [front_top_center_3[0], front_top_center_3[1], front_top_center_3[2] - newDistance];
+		var front_top_center_8 = [front_top_center_4[0], front_top_center_4[1], front_top_center_4[2] - newDistance];
+
+		
+		var front_top_right_1 = front_top_center_2;
+		var front_top_right_2 = [v3[0], v3[1]-newDistance, v3[2]];
+		var front_top_right_3 = v3;
+		var front_top_right_4 = front_top_center_3;
+		var front_top_right_5 = [front_top_right_1[0], front_top_right_1[1], front_top_right_1[2] - newDistance];
+		var front_top_right_6 = [front_top_right_2[0], front_top_right_2[1], front_top_right_2[2] - newDistance];
+		var front_top_right_7 = [front_top_right_3[0], front_top_right_3[1], front_top_right_3[2] - newDistance];
+		var front_top_right_8 = [front_top_right_4[0], front_top_right_4[1], front_top_right_4[2] - newDistance];
+
+		var front_mid_left_1 = [v3[0] - distance, v3[1]-(2*newDistance), v3[2]];
+		var front_mid_left_2 = [v3[0] - (2*newDistance), v3[1]-(2*newDistance), v3[2]];
+		var front_mid_left_3 = front_top_left_2;
+		var front_mid_left_4 = front_top_left_1;
+		var front_mid_left_5 = [front_mid_left_1[0], front_mid_left_1[1], front_mid_left_1[2] - newDistance];
+		var front_mid_left_6 = [front_mid_left_2[0], front_mid_left_2[1], front_mid_left_2[2] - newDistance];
+		var front_mid_left_7 = [front_mid_left_3[0], front_mid_left_3[1], front_mid_left_3[2] - newDistance];
+		var front_mid_left_8 = [front_mid_left_4[0], front_mid_left_4[1], front_mid_left_4[2] - newDistance];
+
+		var front_mid_right_1 = [v3[0] - newDistance, v3[1]-(2*newDistance), v3[2]];
+		var front_mid_right_2 = [v3[0], v3[1]-(2*newDistance), v3[2]];
+		var front_mid_right_3 = front_top_right_2;
+		var front_mid_right_4 = front_top_right_1;
+		var front_mid_right_5 = [front_mid_right_1[0], front_mid_right_1[1], front_mid_right_1[2] - newDistance];
+		var front_mid_right_6 = [front_mid_right_2[0], front_mid_right_2[1], front_mid_right_2[2] - newDistance];
+		var front_mid_right_7 = [front_mid_right_3[0], front_mid_right_3[1], front_mid_right_3[2] - newDistance];
+		var front_mid_right_8 = [front_mid_right_4[0], front_mid_right_4[1], front_mid_right_4[2] - newDistance];
+
+		var front_bot_left_1 = [v1[0], v1[1], v1[2]];
+		var front_bot_left_2 = [v1[0] + newDistance, v1[1], v1[2]];
+		var front_bot_left_3 = front_mid_left_2;
+		var front_bot_left_4 = front_mid_left_1;
+		var front_bot_left_5 = [front_bot_left_1[0], front_bot_left_1[1], front_bot_left_1[2] - newDistance];
+		var front_bot_left_6 = [front_bot_left_2[0], front_bot_left_2[1], front_bot_left_2[2] - newDistance];
+		var front_bot_left_7 = [front_bot_left_3[0], front_bot_left_3[1], front_bot_left_3[2] - newDistance];
+		var front_bot_left_8 = [front_bot_left_4[0], front_bot_left_4[1], front_bot_left_4[2] - newDistance];
+
+		var front_bot_center_1 = front_bot_left_2;
+		var front_bot_center_2 = [v1[0] + (2*newDistance), v1[1], v1[2]];
+		var front_bot_center_3 = front_mid_right_1;
+		var front_bot_center_4 = front_bot_left_3;
+		var front_bot_center_5 = [front_bot_center_1[0], front_bot_center_1[1], front_bot_center_1[2] - newDistance];
+		var front_bot_center_6 = [front_bot_center_2[0], front_bot_center_2[1], front_bot_center_2[2] - newDistance];
+		var front_bot_center_7 = [front_bot_center_3[0], front_bot_center_3[1], front_bot_center_3[2] - newDistance];
+		var front_bot_center_8 = [front_bot_center_4[0], front_bot_center_4[1], front_bot_center_4[2] - newDistance];
+
+		var front_bot_right_1 = front_bot_center_2;
+		var front_bot_right_2 = v2;
+		var front_bot_right_3 = front_mid_right_2;
+		var front_bot_right_4 = front_mid_right_1;
+		var front_bot_right_5 = [front_bot_right_1[0], front_bot_right_1[1], front_bot_right_1[2] - newDistance];
+		var front_bot_right_6 = [front_bot_right_2[0], front_bot_right_2[1], front_bot_right_2[2] - newDistance];
+		var front_bot_right_7 = [front_bot_right_3[0], front_bot_right_3[1], front_bot_right_3[2] - newDistance];;
+		var front_bot_right_8 = [front_bot_right_4[0], front_bot_right_4[1], front_bot_right_4[2] - newDistance];;
+
+		// Mid cubes
+		var mid_top_left_1 = front_top_left_5;
+		var mid_top_left_2 = front_top_left_6;
+		var mid_top_left_3 = front_top_left_7;
+		var mid_top_left_4 = front_top_left_8;
+		var mid_top_left_5 = [mid_top_left_1[0], mid_top_left_1[1], mid_top_left_1[2] - newDistance];
+		var mid_top_left_6 = [mid_top_left_2[0], mid_top_left_2[1], mid_top_left_2[2] - newDistance];
+		var mid_top_left_7 = [mid_top_left_3[0], mid_top_left_3[1], mid_top_left_3[2] - newDistance];
+		var mid_top_left_8 = [mid_top_left_4[0], mid_top_left_4[1], mid_top_left_4[2] - newDistance];
+
+		var mid_top_right_1 = front_top_right_5;
+		var mid_top_right_2 = front_top_right_6;
+		var mid_top_right_3 = front_top_right_7;
+		var mid_top_right_4 = front_top_right_8;
+		var mid_top_right_5 = [mid_top_right_1[0], mid_top_right_1[1], mid_top_right_1[2] - newDistance];
+		var mid_top_right_6 = [mid_top_right_2[0], mid_top_right_2[1], mid_top_right_2[2] - newDistance];
+		var mid_top_right_7 = [mid_top_right_3[0], mid_top_right_3[1], mid_top_right_3[2] - newDistance];
+		var mid_top_right_8 = [mid_top_right_4[0], mid_top_right_4[1], mid_top_right_4[2] - newDistance];
+
+		var mid_bot_left_1 = front_bot_left_5;
+		var mid_bot_left_2 = front_bot_left_6;
+		var mid_bot_left_3 = front_bot_left_7;
+		var mid_bot_left_4 = front_bot_left_8;
+		var mid_bot_left_5 = [mid_bot_left_1[0], mid_bot_left_1[1], mid_bot_left_1[2] - newDistance];
+		var mid_bot_left_6 = [mid_bot_left_2[0], mid_bot_left_2[1], mid_bot_left_2[2] - newDistance];
+		var mid_bot_left_7 = [mid_bot_left_3[0], mid_bot_left_3[1], mid_bot_left_3[2] - newDistance];
+		var mid_bot_left_8 = [mid_bot_left_4[0], mid_bot_left_4[1], mid_bot_left_4[2] - newDistance];
+
+		var mid_bot_right_1 = front_bot_right_5;
+		var mid_bot_right_2 = front_bot_right_6;
+		var mid_bot_right_3 = front_bot_right_7;
+		var mid_bot_right_4 = front_bot_right_8;
+		var mid_bot_right_5 = [mid_bot_right_1[0], mid_bot_right_1[1], mid_bot_right_1[2] - newDistance];
+		var mid_bot_right_6 = [mid_bot_right_2[0], mid_bot_right_2[1], mid_bot_right_2[2] - newDistance];
+		var mid_bot_right_7 = [mid_bot_right_3[0], mid_bot_right_3[1], mid_bot_right_3[2] - newDistance];
+		var mid_bot_right_8 = [mid_bot_right_4[0], mid_bot_right_4[1], mid_bot_right_4[2] - newDistance];
+
+		// Back cubes
+		var back_top_left_1 = [front_top_left_1[0], front_top_left_1[1], front_top_left_1[2]-(2*newDistance)];
+		var back_top_left_2 = [front_top_left_2[0], front_top_left_2[1], front_top_left_2[2]-(2*newDistance)];
+		var back_top_left_3 = [front_top_left_3[0], front_top_left_3[1], front_top_left_3[2]-(2*newDistance)];
+		var back_top_left_4 = [front_top_left_4[0], front_top_left_4[1], front_top_left_4[2]-(2*newDistance)];
+		var back_top_left_5 = [back_top_left_1[0], back_top_left_1[1], back_top_left_1[2] - newDistance];
+		var back_top_left_6 = [back_top_left_2[0], back_top_left_2[1], back_top_left_2[2] - newDistance];
+		var back_top_left_7 = [back_top_left_3[0], back_top_left_3[1], back_top_left_3[2] - newDistance];
+		var back_top_left_8 = [back_top_left_4[0], back_top_left_4[1], back_top_left_4[2] - newDistance];
+
+		var back_top_center_1 = [front_top_center_1[0], front_top_center_1[1], front_top_center_1[2]-(2*newDistance)];
+		var back_top_center_2 = [front_top_center_2[0], front_top_center_2[1], front_top_center_2[2]-(2*newDistance)];
+		var back_top_center_3 = [front_top_center_3[0], front_top_center_3[1], front_top_center_3[2]-(2*newDistance)];
+		var back_top_center_4 = [front_top_center_4[0], front_top_center_4[1], front_top_center_4[2]-(2*newDistance)];
+		var back_top_center_5 = [back_top_center_1[0], back_top_center_1[1], back_top_center_1[2] - newDistance];
+		var back_top_center_6 = [back_top_center_2[0], back_top_center_2[1], back_top_center_2[2] - newDistance];
+		var back_top_center_7 = [back_top_center_3[0], back_top_center_3[1], back_top_center_3[2] - newDistance];
+		var back_top_center_8 = [back_top_center_4[0], back_top_center_4[1], back_top_center_4[2] - newDistance];
+
+		var back_top_right_1 = [front_top_right_1[0], front_top_right_1[1], front_top_right_1[2]-(2*newDistance)];
+		var back_top_right_2 = [front_top_right_2[0], front_top_right_2[1], front_top_right_2[2]-(2*newDistance)];
+		var back_top_right_3 = [front_top_right_3[0], front_top_right_3[1], front_top_right_3[2]-(2*newDistance)];
+		var back_top_right_4 = [front_top_right_4[0], front_top_right_4[1], front_top_right_4[2]-(2*newDistance)];
+		var back_top_right_5 = [back_top_right_1[0], back_top_right_1[1], back_top_right_1[2] - newDistance];
+		var back_top_right_6 = [back_top_right_2[0], back_top_right_2[1], back_top_right_2[2] - newDistance];
+		var back_top_right_7 = [back_top_right_3[0], back_top_right_3[1], back_top_right_3[2] - newDistance];
+		var back_top_right_8 = [back_top_right_4[0], back_top_right_4[1], back_top_right_4[2] - newDistance];
+
+		var back_mid_left_1 = [front_mid_left_1[0], front_mid_left_1[1], front_mid_left_1[2]-(2*newDistance)];
+		var back_mid_left_2 = [front_mid_left_2[0], front_mid_left_2[1], front_mid_left_2[2]-(2*newDistance)];
+		var back_mid_left_3 = [front_mid_left_3[0], front_mid_left_3[1], front_mid_left_3[2]-(2*newDistance)];
+		var back_mid_left_4 = [front_mid_left_4[0], front_mid_left_4[1], front_mid_left_4[2]-(2*newDistance)];
+		var back_mid_left_5 = [back_mid_left_1[0], back_mid_left_1[1], back_mid_left_1[2] - newDistance];
+		var back_mid_left_6 = [back_mid_left_2[0], back_mid_left_2[1], back_mid_left_2[2] - newDistance];
+		var back_mid_left_7 = [back_mid_left_3[0], back_mid_left_3[1], back_mid_left_3[2] - newDistance];
+		var back_mid_left_8 = [back_mid_left_4[0], back_mid_left_4[1], back_mid_left_4[2] - newDistance];
+
+		var back_mid_right_1 = [front_mid_right_1[0], front_mid_right_1[1], front_mid_right_1[2]-(2*newDistance)];
+		var back_mid_right_2 = [front_mid_right_2[0], front_mid_right_2[1], front_mid_right_2[2]-(2*newDistance)];
+		var back_mid_right_3 = [front_mid_right_3[0], front_mid_right_3[1], front_mid_right_3[2]-(2*newDistance)];
+		var back_mid_right_4 = [front_mid_right_4[0], front_mid_right_4[1], front_mid_right_4[2]-(2*newDistance)];
+		var back_mid_right_5 = [back_mid_right_1[0], back_mid_right_1[1], back_mid_right_1[2] - newDistance];
+		var back_mid_right_6 = [back_mid_right_2[0], back_mid_right_2[1], back_mid_right_2[2] - newDistance];
+		var back_mid_right_7 = [back_mid_right_3[0], back_mid_right_3[1], back_mid_right_3[2] - newDistance];
+		var back_mid_right_8 = [back_mid_right_4[0], back_mid_right_4[1], back_top_right_4[2] - newDistance];
+
+		var back_bot_left_1 = [front_bot_left_1[0], front_bot_left_1[1], front_bot_left_1[2]-(2*newDistance)];
+		var back_bot_left_2 = [front_bot_left_2[0], front_bot_left_2[1], front_bot_left_2[2]-(2*newDistance)];
+		var back_bot_left_3 = [front_bot_left_3[0], front_bot_left_3[1], front_bot_left_3[2]-(2*newDistance)];
+		var back_bot_left_4 = [front_bot_left_4[0], front_bot_left_4[1], front_bot_left_4[2]-(2*newDistance)];
+		var back_bot_left_5 = [back_bot_left_1[0], back_bot_left_1[1], back_bot_left_1[2] - newDistance];
+		var back_bot_left_6 = [back_bot_left_2[0], back_bot_left_2[1], back_bot_left_2[2] - newDistance];
+		var back_bot_left_7 = [back_bot_left_3[0], back_bot_left_3[1], back_bot_left_3[2] - newDistance];
+		var back_bot_left_8 = [back_bot_left_4[0], back_bot_left_4[1], back_bot_left_4[2] - newDistance];
+
+		var back_bot_center_1 = [front_bot_center_1[0], front_bot_center_1[1], front_bot_center_1[2]-(2*newDistance)];
+		var back_bot_center_2 = [front_bot_center_2[0], front_bot_center_2[1], front_bot_center_2[2]-(2*newDistance)];
+		var back_bot_center_3 = [front_bot_center_3[0], front_bot_center_3[1], front_bot_center_3[2]-(2*newDistance)];
+		var back_bot_center_4 = [front_bot_center_4[0], front_bot_center_4[1], front_bot_center_4[2]-(2*newDistance)];
+		var back_bot_center_5 = [back_bot_center_1[0], back_bot_center_1[1], back_bot_center_1[2] - newDistance];
+		var back_bot_center_6 = [back_bot_center_2[0], back_bot_center_2[1], back_bot_center_2[2] - newDistance];
+		var back_bot_center_7 = [back_bot_center_3[0], back_bot_center_3[1], back_bot_center_3[2] - newDistance];
+		var back_bot_center_8 = [back_bot_center_4[0], back_bot_center_4[1], back_bot_center_4[2] - newDistance];
+
+		var back_bot_right_1 = [front_bot_right_1[0], front_bot_right_1[1], front_bot_right_1[2]-(2*newDistance)];
+		var back_bot_right_2 = [front_bot_right_2[0], front_bot_right_2[1], front_bot_right_2[2]-(2*newDistance)];
+		var back_bot_right_3 = [front_bot_right_3[0], front_bot_right_3[1], front_bot_right_3[2]-(2*newDistance)];
+		var back_bot_right_4 = [front_bot_right_4[0], front_bot_right_4[1], front_bot_right_4[2]-(2*newDistance)];
+		var back_bot_right_5 = [back_bot_right_1[0], back_bot_right_1[1], back_bot_right_1[2] - newDistance];
+		var back_bot_right_6 = [back_bot_right_2[0], back_bot_right_2[1], back_bot_right_2[2] - newDistance];
+		var back_bot_right_7 = [back_bot_right_3[0], back_bot_right_3[1], back_bot_right_3[2] - newDistance];
+		var back_bot_right_8 = [back_bot_right_4[0], back_bot_right_4[1], back_bot_right_4[2] - newDistance];
+
+		mengerSponge(front_top_left_1, front_top_left_2, front_top_left_3, front_top_left_4, front_top_left_5, front_top_left_6, front_top_left_7, front_top_left_8, recursionLevel);
+		mengerSponge(front_top_center_1, front_top_center_2, front_top_center_3, front_top_center_4, front_top_center_5, front_top_center_6, front_top_center_7, front_top_center_8, recursionLevel);
+		mengerSponge(front_top_right_1, front_top_right_2, front_top_right_3, front_top_right_4, front_top_right_5, front_top_right_6, front_top_right_7, front_top_right_8, recursionLevel);
+		mengerSponge(front_mid_left_1, front_mid_left_2, front_mid_left_3, front_mid_left_4, front_mid_left_5, front_mid_left_6, front_mid_left_7, front_mid_left_8, recursionLevel);
+		mengerSponge(front_mid_right_1, front_mid_right_2, front_mid_right_3, front_mid_right_4, front_mid_right_5, front_mid_right_6, front_mid_right_7, front_mid_right_8, recursionLevel);
+		mengerSponge(front_bot_left_1, front_bot_left_2, front_bot_left_3, front_bot_left_4, front_bot_left_5, front_bot_left_6, front_bot_left_7, front_bot_left_8, recursionLevel);
+ 		mengerSponge(front_bot_center_1, front_bot_center_2, front_bot_center_3, front_bot_center_4, front_bot_center_5, front_bot_center_6, front_bot_center_7, front_bot_center_8, recursionLevel);
+		mengerSponge(front_bot_right_1, front_bot_right_2, front_bot_right_3, front_bot_right_4, front_bot_right_5, front_bot_right_6, front_bot_right_7, front_bot_right_8, recursionLevel);
+
+		mengerSponge(mid_top_right_1, mid_top_right_2, mid_top_right_3, mid_top_right_4, mid_top_right_5, mid_top_right_6, mid_top_right_7, mid_top_right_8, recursionLevel);
+		mengerSponge(mid_top_left_1, mid_top_left_2, mid_top_left_3, mid_top_left_4, mid_top_left_5, mid_top_left_6, mid_top_left_7, mid_top_left_8, recursionLevel);
+		mengerSponge(mid_bot_left_1, mid_bot_left_2, mid_bot_left_3, mid_bot_left_4, mid_bot_left_5, mid_bot_left_6, mid_bot_left_7, mid_bot_left_8, recursionLevel);
+		mengerSponge(mid_bot_right_1, mid_bot_right_2, mid_bot_right_3, mid_bot_right_4, mid_bot_right_5, mid_bot_right_6, mid_bot_right_7, mid_bot_right_8, recursionLevel);
+ 
+		mengerSponge(back_top_left_1, back_top_left_2, back_top_left_3, back_top_left_4, back_top_left_5, back_top_left_6, back_top_left_7, back_top_left_8, recursionLevel);
+		mengerSponge(back_top_center_1, back_top_center_2, back_top_center_3, back_top_center_4, back_top_center_5, back_top_center_6, back_top_center_7, back_top_center_8, recursionLevel);
+		mengerSponge(back_top_right_1, back_top_right_2, back_top_right_3, back_top_right_4, back_top_right_5, back_top_right_6, back_top_right_7, back_top_right_8, recursionLevel);
+		mengerSponge(back_mid_left_1, back_mid_left_2, back_mid_left_3, back_mid_left_4, back_mid_left_5, back_mid_left_6, back_mid_left_7, back_mid_left_8, recursionLevel);
+		mengerSponge(back_mid_right_1, back_mid_right_2, back_mid_right_3, back_mid_right_4, back_mid_right_5, back_mid_right_6, back_mid_right_7, back_mid_right_8, recursionLevel);
+		mengerSponge(back_bot_left_1, back_bot_left_2, back_bot_left_3, back_bot_left_4, back_bot_left_5, back_bot_left_6, back_bot_left_7, back_bot_left_8, recursionLevel);
+		mengerSponge(back_bot_center_1, back_bot_center_2, back_bot_center_3, back_bot_center_4, back_bot_center_5, back_bot_center_6, back_bot_center_7, back_bot_center_8, recursionLevel);
+		mengerSponge(back_bot_right_1, back_bot_right_2, back_bot_right_3, back_bot_right_4, back_bot_right_5, back_bot_right_6, back_bot_right_7, back_bot_right_8, recursionLevel);
+ 
+	}
+}
+
+function computeJerusalemCube() {
+	var v1 = [-1, -1, 1];       
+	
+	var v2 = [1, -1, 1];        
+		
+	var v3 = [1, 1, 1];     
+
+	var v4 = [-1, 1, 1];        
+	
+	var v5 = [-1, -1, -1];  
+
+	var v6 = [1, -1, -1];       
+
+	var v7 = [1, 1, -1];        
+
+	var v8 = [-1, 1, -1];
+	
+	vertices = [];
+	normals = [];
+	jerusalemCube(v1, v2, v3, v4, v5, v6, v7, v8, numLevels);
+	computeVertexNormals(vertices, normals);
+}
+
+function jerusalemCube(v1, v2, v3, v4, v5, v6, v7, v8, recursionLevel) {
+	if(recursionLevel < 1) {
+		defineCube(v1, v2, v3, v4, v5, v6, v7, v8);
+	}
+	else {
+		recursionLevel--;
+	
+		var distance = computeDistance(v3, v4);
+		var smallCube = (1/6) * distance;
+		var bigCube = (distance - smallCube)/2;
+
+		// Front face cubes
+		var front_top_left_1 = [v4[0], v4[1] - bigCube, v4[2]];
+		var front_top_left_2 = [v4[0] + bigCube, v4[1] - bigCube, v4[2]];
+		var front_top_left_3 = [v4[0] + bigCube, v4[1], v4[2]];
+		var front_top_left_4 = v4;
+		var front_top_left_5 = [front_top_left_1[0], front_top_left_1[1], front_top_left_1[2] - bigCube];
+		var front_top_left_6 = [front_top_left_2[0], front_top_left_2[1], front_top_left_2[2] - bigCube];
+		var front_top_left_7 = [front_top_left_3[0], front_top_left_3[1], front_top_left_3[2] - bigCube];
+		var front_top_left_8 = [front_top_left_4[0], front_top_left_4[1], front_top_left_4[2] - bigCube];
+
+		var front_top_center_1 = [v4[0] + bigCube, v4[1] - smallCube, v4[2]];
+		var front_top_center_2 = [v4[0] + bigCube + smallCube, v4[1] - smallCube, v4[2]];
+		var front_top_center_3 = [v4[0] + bigCube + smallCube, v4[1], v4[2]];
+		var front_top_center_4 = [v4[0] + bigCube, v4[1], v4[2]];
+		var front_top_center_5 = [front_top_center_1[0], front_top_center_1[1], front_top_center_1[2] - smallCube];
+		var front_top_center_6 = [front_top_center_2[0], front_top_center_2[1], front_top_center_2[2] - smallCube];
+		var front_top_center_7 = [front_top_center_3[0], front_top_center_3[1], front_top_center_3[2] - smallCube];
+		var front_top_center_8 = [front_top_center_4[0], front_top_center_4[1], front_top_center_4[2] - smallCube];
+
+		var front_top_right_1 = [v3[0] - bigCube, v3[1] - bigCube, v3[2]];;
+		var front_top_right_2 = [v3[0], v3[1] - bigCube, v4[2]];
+		var front_top_right_3 = v3;
+		var front_top_right_4 = [v3[0] - bigCube, v3[1], v3[2]];
+		var front_top_right_5 = [front_top_right_1[0], front_top_right_1[1], front_top_right_1[2] - bigCube];
+		var front_top_right_6 = [front_top_right_2[0], front_top_right_2[1], front_top_right_2[2] - bigCube];
+		var front_top_right_7 = [front_top_right_3[0], front_top_right_3[1], front_top_right_3[2] - bigCube];
+		var front_top_right_8 = [front_top_right_4[0], front_top_right_4[1], front_top_right_4[2] - bigCube];
+
+		var front_mid_left_1 = [v4[0], v4[1] - bigCube - smallCube, v4[2]];
+		var front_mid_left_2 = [v4[0] + smallCube, v4[1] - bigCube - smallCube, v4[2]];
+		var front_mid_left_3 = [v4[0] + smallCube, v4[1] - bigCube, v4[2]];
+		var front_mid_left_4 = [v4[0], v4[1] - bigCube, v4[2]];
+		var front_mid_left_5 = [front_mid_left_1[0], front_mid_left_1[1], front_mid_left_1[2] - smallCube];
+		var front_mid_left_6 = [front_mid_left_2[0], front_mid_left_2[1], front_mid_left_2[2] - smallCube];
+		var front_mid_left_7 = [front_mid_left_3[0], front_mid_left_3[1], front_mid_left_3[2] - smallCube];
+		var front_mid_left_8 = [front_mid_left_4[0], front_mid_left_4[1], front_mid_left_4[2] - smallCube];
+
+		var front_mid_right_1 = [v3[0] - smallCube, v3[1] - bigCube - smallCube, v3[2]];
+		var front_mid_right_2 = [v3[0], v3[1] - bigCube - smallCube, v3[2]];
+		var front_mid_right_3 = [v3[0], v3[1] - bigCube, v3[2]];
+		var front_mid_right_4 = [v3[0] - smallCube, v3[1] - bigCube, v3[2]];
+		var front_mid_right_5 = [front_mid_right_1[0], front_mid_right_1[1], front_mid_right_1[2] - smallCube];
+		var front_mid_right_6 = [front_mid_right_2[0], front_mid_right_2[1], front_mid_right_2[2] - smallCube];
+		var front_mid_right_7 = [front_mid_right_3[0], front_mid_right_3[1], front_mid_right_3[2] - smallCube];
+		var front_mid_right_8 = [front_mid_right_4[0], front_mid_right_4[1], front_mid_right_4[2] - smallCube];
+
+		var front_bot_left_1 = v1;
+		var front_bot_left_2 = [v1[0] + bigCube, v1[1], v1[2]];
+		var front_bot_left_3 = [v1[0] + bigCube, v1[1] + bigCube, v1[2]];
+		var front_bot_left_4 = [v1[0], v1[1] + bigCube, v1[2]];
+		var front_bot_left_5 = [front_bot_left_1[0], front_bot_left_1[1], front_bot_left_1[2] - bigCube];
+		var front_bot_left_6 = [front_bot_left_2[0], front_bot_left_2[1], front_bot_left_2[2] - bigCube];
+		var front_bot_left_7 = [front_bot_left_3[0], front_bot_left_3[1], front_bot_left_3[2] - bigCube];
+		var front_bot_left_8 = [front_bot_left_4[0], front_bot_left_4[1], front_bot_left_4[2] - bigCube];
+
+		var front_bot_center_1 = [v1[0] + bigCube, v1[1], v1[2]];
+		var front_bot_center_2 = [v1[0] + bigCube + smallCube, v1[1], v1[2]];
+		var front_bot_center_3 = [v1[0] + bigCube + smallCube, v1[1] + smallCube, v1[2]];
+		var front_bot_center_4 = [v1[0] + bigCube, v1[1] + smallCube, v1[2]];
+		var front_bot_center_5 = [front_bot_center_1[0], front_bot_center_1[1], front_bot_center_1[2] - smallCube];
+		var front_bot_center_6 = [front_bot_center_2[0], front_bot_center_2[1], front_bot_center_2[2] - smallCube];
+		var front_bot_center_7 = [front_bot_center_3[0], front_bot_center_3[1], front_bot_center_3[2] - smallCube];
+		var front_bot_center_8 = [front_bot_center_4[0], front_bot_center_4[1], front_bot_center_4[2] - smallCube];
+
+		var front_bot_right_1 = [v2[0] - bigCube, v2[1], v2[2]];
+		var front_bot_right_2 = v2;
+		var front_bot_right_3 = [v2[0], v2[1] + bigCube, v2[2]];
+		var front_bot_right_4 = [v2[0] - bigCube, v2[1] + bigCube, v2[2]];
+		var front_bot_right_5 = [front_bot_right_1[0], front_bot_right_1[1], front_bot_right_1[2] - bigCube];
+		var front_bot_right_6 = [front_bot_right_2[0], front_bot_right_2[1], front_bot_right_2[2] - bigCube];
+		var front_bot_right_7 = [front_bot_right_3[0], front_bot_right_3[1], front_bot_right_3[2] - bigCube];
+		var front_bot_right_8 = [front_bot_right_4[0], front_bot_right_4[1], front_bot_right_4[2] - bigCube];
+
+		// Mid cubes
+		var mid_top_left_1 = [v4[0], v4[1] - smallCube, v4[2] - bigCube];
+		var mid_top_left_2 = [v4[0] + smallCube, v4[1] - smallCube, v4[2] - bigCube];
+		var mid_top_left_3 = [v4[0] + smallCube, v4[1], v4[2] - bigCube];
+		var mid_top_left_4 = [v4[0], v4[1], v4[2] - bigCube];
+		var mid_top_left_5 = [mid_top_left_1[0], mid_top_left_1[1], mid_top_left_1[2] - smallCube];
+		var mid_top_left_6 = [mid_top_left_2[0], mid_top_left_2[1], mid_top_left_2[2] - smallCube];
+		var mid_top_left_7 = [mid_top_left_3[0], mid_top_left_3[1], mid_top_left_3[2] - smallCube];
+		var mid_top_left_8 = [mid_top_left_4[0], mid_top_left_4[1], mid_top_left_4[2] - smallCube];
+
+		var mid_top_right_1 = [v3[0] - smallCube, v3[1] - smallCube, v3[2] - bigCube];
+		var mid_top_right_2 = [v3[0], v3[1] - smallCube, v3[2] - bigCube];
+		var mid_top_right_3 = [v3[0], v3[1], v3[2] - bigCube];
+		var mid_top_right_4 = [v3[0] - smallCube, v3[1], v3[2] - bigCube];
+		var mid_top_right_5 = [mid_top_right_1[0], mid_top_right_1[1], mid_top_right_1[2] - smallCube];
+		var mid_top_right_6 = [mid_top_right_2[0], mid_top_right_2[1], mid_top_right_2[2] - smallCube];
+		var mid_top_right_7 = [mid_top_right_3[0], mid_top_right_3[1], mid_top_right_3[2] - smallCube];
+		var mid_top_right_8 = [mid_top_right_4[0], mid_top_right_4[1], mid_top_right_4[2] - smallCube];
+
+		var mid_bot_left_1 = [v1[0], v1[1], v2[2] - bigCube];
+		var mid_bot_left_2 = [v1[0] + smallCube, v1[1], v1[2] - bigCube];
+		var mid_bot_left_3 = [v1[0] + smallCube, v1[1] + smallCube, v1[2] - bigCube];
+		var mid_bot_left_4 = [v1[0], v1[1] + smallCube, v1[2] - bigCube];
+		var mid_bot_left_5 = [mid_bot_left_1[0], mid_bot_left_1[1], mid_bot_left_1[2] - smallCube];
+		var mid_bot_left_6 = [mid_bot_left_2[0], mid_bot_left_2[1], mid_bot_left_2[2] - smallCube];
+		var mid_bot_left_7 = [mid_bot_left_3[0], mid_bot_left_3[1], mid_bot_left_3[2] - smallCube];
+		var mid_bot_left_8 = [mid_bot_left_4[0], mid_bot_left_4[1], mid_bot_left_4[2] - smallCube];
+
+		var mid_bot_right_1 = [v2[0] - smallCube, v2[1], v2[2] - bigCube];
+		var mid_bot_right_2 = [v2[0], v2[1], v2[2] - bigCube];
+		var mid_bot_right_3 = [v2[0], v2[1] + smallCube, v2[2] - bigCube];
+		var mid_bot_right_4 = [v2[0] - smallCube, v2[1] + smallCube, v2[2] - bigCube];
+		var mid_bot_right_5 = [mid_bot_right_1[0], mid_bot_right_1[1], mid_bot_right_1[2] - smallCube];
+		var mid_bot_right_6 = [mid_bot_right_2[0], mid_bot_right_2[1], mid_bot_right_2[2] - smallCube];
+		var mid_bot_right_7 = [mid_bot_right_3[0], mid_bot_right_3[1], mid_bot_right_3[2] - smallCube];
+		var mid_bot_right_8 = [mid_bot_right_4[0], mid_bot_right_4[1], mid_bot_right_4[2] - smallCube];
+
+		// Back cubes
+		var back_top_left_1 = [v4[0], v4[1] - bigCube, v4[2] - bigCube - smallCube];
+		var back_top_left_2 = [v4[0] + bigCube, v4[1] - bigCube, v4[2] - bigCube - smallCube];
+		var back_top_left_3 = [v4[0] + bigCube, v4[1], v4[2] - bigCube - smallCube];
+		var back_top_left_4 = [v4[0], v4[1], v4[2] - bigCube - smallCube];
+		var back_top_left_5 = [back_top_left_1[0], back_top_left_1[1], back_top_left_1[2] - bigCube];
+		var back_top_left_6 = [back_top_left_2[0], back_top_left_2[1], back_top_left_2[2] - bigCube];
+		var back_top_left_7 = [back_top_left_3[0], back_top_left_3[1], back_top_left_3[2] - bigCube];
+		var back_top_left_8 = [back_top_left_4[0], back_top_left_4[1], back_top_left_4[2] - bigCube];
+
+		var back_top_center_1 = [v4[0] + bigCube, v4[1] - smallCube, v4[2] - (5*smallCube)];
+		var back_top_center_2 = [v4[0] + bigCube + smallCube, v4[1] - smallCube, v4[2] - (5*smallCube)];
+		var back_top_center_3 = [v4[0] + bigCube + smallCube, v4[1], v4[2] - (5*smallCube)];
+		var back_top_center_4 = [v4[0] + bigCube, v4[1], v4[2] - (5*smallCube)];
+		var back_top_center_5 = [back_top_center_1[0], back_top_center_1[1], back_top_center_1[2] - smallCube];
+		var back_top_center_6 = [back_top_center_2[0], back_top_center_2[1], back_top_center_2[2] - smallCube];
+		var back_top_center_7 = [back_top_center_3[0], back_top_center_3[1], back_top_center_3[2] - smallCube];
+		var back_top_center_8 = [back_top_center_4[0], back_top_center_4[1], back_top_center_4[2] - smallCube];
+
+		var back_top_right_1 = [v3[0] - bigCube, v3[1] - bigCube, v3[2] - bigCube - smallCube];;
+		var back_top_right_2 = [v3[0], v3[1] - bigCube, v4[2] - bigCube - smallCube];
+		var back_top_right_3 = [v3[0], v3[1], v3[2] - bigCube - smallCube];
+		var back_top_right_4 = [v3[0] - bigCube, v3[1], v3[2] - bigCube - smallCube];
+		var back_top_right_5 = [back_top_right_1[0], back_top_right_1[1], back_top_right_1[2] - bigCube];
+		var back_top_right_6 = [back_top_right_2[0], back_top_right_2[1], back_top_right_2[2] - bigCube];
+		var back_top_right_7 = [back_top_right_3[0], back_top_right_3[1], back_top_right_3[2] - bigCube];
+		var back_top_right_8 = [back_top_right_4[0], back_top_right_4[1], back_top_right_4[2] - bigCube];
+
+		var back_mid_left_1 = [v4[0], v4[1] - bigCube - smallCube, v4[2] - (2*bigCube)];
+		var back_mid_left_2 = [v4[0] + smallCube, v4[1] - bigCube - smallCube, v4[2] - (2*bigCube)];
+		var back_mid_left_3 = [v4[0] + smallCube, v4[1] - bigCube, v4[2] - (2*bigCube)];
+		var back_mid_left_4 = [v4[0], v4[1] - bigCube, v4[2] - (2*bigCube)];
+		var back_mid_left_5 = [back_mid_left_1[0], back_mid_left_1[1], back_mid_left_1[2] - smallCube];
+		var back_mid_left_6 = [back_mid_left_2[0], back_mid_left_2[1], back_mid_left_2[2] - smallCube];
+		var back_mid_left_7 = [back_mid_left_3[0], back_mid_left_3[1], back_mid_left_3[2] - smallCube];
+		var back_mid_left_8 = [back_mid_left_4[0], back_mid_left_4[1], back_mid_left_4[2] - smallCube];
+
+		var back_mid_right_1 = [v3[0] - smallCube, v3[1] - bigCube - smallCube, v3[2] - (2*bigCube)];
+		var back_mid_right_2 = [v3[0], v3[1] - bigCube - smallCube, v3[2] - (2*bigCube)];
+		var back_mid_right_3 = [v3[0], v3[1] - bigCube, v3[2] - (2*bigCube)];
+		var back_mid_right_4 = [v3[0] - smallCube, v3[1] - bigCube, v3[2] - (2*bigCube)];
+		var back_mid_right_5 = [back_mid_right_1[0], back_mid_right_1[1], back_mid_right_1[2] - smallCube];
+		var back_mid_right_6 = [back_mid_right_2[0], back_mid_right_2[1], back_mid_right_2[2] - smallCube];
+		var back_mid_right_7 = [back_mid_right_3[0], back_mid_right_3[1], back_mid_right_3[2] - smallCube];
+		var back_mid_right_8 = [back_mid_right_4[0], back_mid_right_4[1], back_mid_right_4[2] - smallCube];
+
+		var back_bot_left_1 = [v1[0], v1[1], v1[2] - bigCube - smallCube];
+		var back_bot_left_2 = [v1[0] + bigCube, v1[1], v1[2] - bigCube - smallCube];
+		var back_bot_left_3 = [v1[0] + bigCube, v1[1] + bigCube, v1[2] - bigCube - smallCube];
+		var back_bot_left_4 = [v1[0], v1[1] + bigCube, v1[2] - bigCube - smallCube];
+		var back_bot_left_5 = [back_bot_left_1[0], back_bot_left_1[1], back_bot_left_1[2] - bigCube];
+		var back_bot_left_6 = [back_bot_left_2[0], back_bot_left_2[1], back_bot_left_2[2] - bigCube];
+		var back_bot_left_7 = [back_bot_left_3[0], back_bot_left_3[1], back_bot_left_3[2] - bigCube];
+		var back_bot_left_8 = [back_bot_left_4[0], back_bot_left_4[1], back_bot_left_4[2] - bigCube];
+
+		var back_bot_center_1 = [v1[0] + bigCube, v1[1], v1[2] - (5*smallCube)];
+		var back_bot_center_2 = [v1[0] + bigCube + smallCube, v1[1], v1[2] - (5*smallCube)];
+		var back_bot_center_3 = [v1[0] + bigCube + smallCube, v1[1] + smallCube, v1[2] - (5*smallCube)];
+		var back_bot_center_4 = [v1[0] + bigCube, v1[1] + smallCube, v1[2] - (5*smallCube)];
+		var back_bot_center_5 = [back_bot_center_1[0], back_bot_center_1[1], back_bot_center_1[2] - smallCube];
+		var back_bot_center_6 = [back_bot_center_2[0], back_bot_center_2[1], back_bot_center_2[2] - smallCube];
+		var back_bot_center_7 = [back_bot_center_3[0], back_bot_center_3[1], back_bot_center_3[2] - smallCube];
+		var back_bot_center_8 = [back_bot_center_4[0], back_bot_center_4[1], back_bot_center_4[2] - smallCube];
+
+		var back_bot_right_1 = [v2[0] - bigCube, v2[1], v2[2] - bigCube - smallCube];
+		var back_bot_right_2 = [v2[0], v2[1], v2[2] - bigCube - smallCube];
+		var back_bot_right_3 = [v2[0], v2[1] + bigCube, v2[2] - bigCube - smallCube];
+		var back_bot_right_4 = [v2[0] - bigCube, v2[1] + bigCube, v2[2] - bigCube - smallCube];
+		var back_bot_right_5 = [back_bot_right_1[0], back_bot_right_1[1], back_bot_right_1[2] - bigCube];
+		var back_bot_right_6 = [back_bot_right_2[0], back_bot_right_2[1], back_bot_right_2[2] - bigCube];
+		var back_bot_right_7 = [back_bot_right_3[0], back_bot_right_3[1], back_bot_right_3[2] - bigCube];
+		var back_bot_right_8 = [back_bot_right_4[0], back_bot_right_4[1], back_bot_right_4[2] - bigCube];
+
+
+		jerusalemCube(front_top_left_1, front_top_left_2, front_top_left_3, front_top_left_4, front_top_left_5, front_top_left_6, front_top_left_7, front_top_left_8, recursionLevel);
+		jerusalemCube(front_top_center_1, front_top_center_2, front_top_center_3, front_top_center_4, front_top_center_5, front_top_center_6, front_top_center_7, front_top_center_8, recursionLevel);
+		jerusalemCube(front_top_right_1, front_top_right_2, front_top_right_3, front_top_right_4, front_top_right_5, front_top_right_6, front_top_right_7, front_top_right_8, recursionLevel);
+		jerusalemCube(front_mid_left_1, front_mid_left_2, front_mid_left_3, front_mid_left_4, front_mid_left_5, front_mid_left_6, front_mid_left_7, front_mid_left_8, recursionLevel);
+		jerusalemCube(front_mid_right_1, front_mid_right_2, front_mid_right_3, front_mid_right_4, front_mid_right_5, front_mid_right_6, front_mid_right_7, front_mid_right_8, recursionLevel);
+		jerusalemCube(front_bot_left_1, front_bot_left_2, front_bot_left_3, front_bot_left_4, front_bot_left_5, front_bot_left_6, front_bot_left_7, front_bot_left_8, recursionLevel);
+		jerusalemCube(front_bot_center_1, front_bot_center_2, front_bot_center_3, front_bot_center_4, front_bot_center_5, front_bot_center_6, front_bot_center_7, front_bot_center_8, recursionLevel);
+		jerusalemCube(front_bot_right_1, front_bot_right_2, front_bot_right_3, front_bot_right_4, front_bot_right_5, front_bot_right_6, front_bot_right_7, front_bot_right_8, recursionLevel);
+
+		jerusalemCube(mid_top_left_1, mid_top_left_2, mid_top_left_3, mid_top_left_4, mid_top_left_5, mid_top_left_6, mid_top_left_7, mid_top_left_8, recursionLevel);
+		jerusalemCube(mid_top_right_1, mid_top_right_2, mid_top_right_3, mid_top_right_4, mid_top_right_5, mid_top_right_6, mid_top_right_7, mid_top_right_8, recursionLevel);
+		jerusalemCube(mid_bot_left_1, mid_bot_left_2, mid_bot_left_3, mid_bot_left_4, mid_bot_left_5, mid_bot_left_6, mid_bot_left_7, mid_bot_left_8, recursionLevel);
+		jerusalemCube(mid_bot_right_1, mid_bot_right_2, mid_bot_right_3, mid_bot_right_4, mid_bot_right_5, mid_bot_right_6, mid_bot_right_7, mid_bot_right_8, recursionLevel);
+	
+		jerusalemCube(back_top_left_1, back_top_left_2, back_top_left_3, back_top_left_4, back_top_left_5, back_top_left_6, back_top_left_7, back_top_left_8, recursionLevel);
+		jerusalemCube(back_top_center_1, back_top_center_2, back_top_center_3, back_top_center_4, back_top_center_5, back_top_center_6, back_top_center_7, back_top_center_8, recursionLevel);
+		jerusalemCube(back_top_right_1, back_top_right_2, back_top_right_3, back_top_right_4, back_top_right_5, back_top_right_6, back_top_right_7, back_top_right_8, recursionLevel);
+		jerusalemCube(back_mid_left_1, back_mid_left_2, back_mid_left_3, back_mid_left_4, back_mid_left_5, back_mid_left_6, back_mid_left_7, back_mid_left_8, recursionLevel);
+		jerusalemCube(back_mid_right_1, back_mid_right_2, back_mid_right_3, back_mid_right_4, back_mid_right_5, back_mid_right_6, back_mid_right_7, back_mid_right_8, recursionLevel);
+		jerusalemCube(back_bot_left_1, back_bot_left_2, back_bot_left_3, back_bot_left_4, back_bot_left_5, back_bot_left_6, back_bot_left_7, back_bot_left_8, recursionLevel);
+		jerusalemCube(back_bot_center_1, back_bot_center_2, back_bot_center_3, back_bot_center_4, back_bot_center_5, back_bot_center_6, back_bot_center_7, back_bot_center_8, recursionLevel);
+		jerusalemCube(back_bot_right_1, back_bot_right_2, back_bot_right_3, back_bot_right_4, back_bot_right_5, back_bot_right_6, back_bot_right_7, back_bot_right_8, recursionLevel);
 	}
 }

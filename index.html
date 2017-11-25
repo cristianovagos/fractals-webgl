@@ -17,6 +17,21 @@ Miguel Bras
 
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
 
+<!-- Bootstrap Stuff -->
+<script src="js/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+<script src="js/bootstrap.min.js"></script>
+
+<!-- Bootstrap Toggle Library -->
+<link rel="stylesheet" href="css/bootstrap-toggle.min.css">
+<script src="js/bootstrap-toggle.min.js"></script>
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="css/custom.css">
+
+<!-- jsColor Library -->
+<script src="js/jscolor.js"></script>
+
 <!--
 
 The vertex and fragment shaders.
@@ -187,87 +202,196 @@ The fragment shader is the same simple one.
 
 <body onload="runWebGL();">
 
-	<div style="text-align: center">
-		
-		<p>Fractals 3D - Cristiano Vagos, Miguel Martins</p>
-		
-		<canvas id="my-canvas" style="border:1px solid #000000;" width="350" height="350"></canvas>
+	<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<a class="navbar-brand" href="#">Fractals 3D</a>
+				<p class="navbar-text">CV Project 2017/2018</p>
+			</div>
+			<p class="navbar-text navbar-right" style="padding-right: 10px;">Cristiano Vagos, Miguel Br&aacute;s</p>
+		</div>
+	</nav>
 
-		<p>XX rotation: 
-			
-		<button id="XX-on-off-button">On / Off</button>
+	<div class="container">
+		<div class="row">
+			<div class="col-md-6">
+				<div class="row" style="padding-top: 50px; padding-bottom: 20px;">
+					<h2>Welcome to our WebGL project!</h2>
+					<p>Drag the mouse on the canvas for moving the object, and drag the mouse wheel for scaling.</p>
+					<p>Control the canvas on the right with the following controls:</p>
+				</div>
+				<div class="row" style="padding-top: 5px; padding-bottom: 5px; margin-right: 10px;">
+					<div class="card">
+						<div class="card-content" style="width: 100%; padding-bottom: 20px;">
+							<div class="card-header-blue">
+								<h4 style="margin-left: 10px;">XX Rotation</h4>
+							</div>
+							<div class="card-body">
+								<div class="col-sm-4">
+									<p>On/Off:</p>
+									<div class="material-switch">
+										<input id="XX-on-off-button" type="checkbox"/>
+										<label for="XX-on-off-button" class="label-default"></label>
+									</div>
+								</div>
+								<div class="col-sm-4">
+									<p>Change Direction:</p>
+									<div class="material-switch">
+										<input id="XX-direction-button" type="checkbox"/>
+										<label for="XX-direction-button" class="label-default"></label>
+									</div>
+								</div>
+								<div class="col-sm-4">
+									<p>Change Speed:</p>
+									<button type="button" class="btn btn-primary btn-sm" id="XX-slower-button" aria-pressed="false" autocomplete="off">
+											Slower
+									</button>
+									
+									<button type="button" class="btn btn-primary btn-sm" id="XX-faster-button" aria-pressed="false" autocomplete="off">
+										Faster
+									</button>
+								</div>
+								
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row" style="padding-top: 15px; padding-bottom: 5px; margin-right: 10px;">
+					<div class="card">
+						<div class="card-content" style="width: 100%; padding-bottom: 30px;">
+							<div class="card-header-blue">
+								<h4 style="margin-left: 10px;">YY Rotation</h4>
+							</div>
+							<div class="card-body">
+								<div class="col-sm-4">
+									<p>On/Off:</p>
+									<div class="material-switch">
+										<input id="YY-on-off-button" type="checkbox"/>
+										<label for="YY-on-off-button" class="label-default"></label>
+									</div>
+								</div>
+								<div class="col-sm-4">
+									<p>Change Direction:</p>
+									<div class="material-switch">
+										<input id="YY-direction-button" type="checkbox"/>
+										<label for="YY-direction-button" class="label-default"></label>
+									</div>
+								</div>
+								<div class="col-sm-4">
+									<p>Change Speed:</p>
+									<button type="button" class="btn btn-primary btn-sm" id="YY-slower-button" aria-pressed="false" autocomplete="off">
+											Slower
+									</button>
+									
+									<button type="button" class="btn btn-primary btn-sm" id="YY-faster-button" aria-pressed="false" autocomplete="off">
+										Faster
+									</button>
+								</div>
+								
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row" style="padding-top: 15px; padding-bottom: 5px; margin-right: 10px;">
+					<div class="card">
+						<div class="card-content" style="width: 100%; padding-bottom: 20px;">
+							<div class="card-header-blue">
+								<h4 style="margin-left: 10px;">ZZ Rotation</h4>
+							</div>
+							<div class="card-body">
+								<div class="col-sm-4">
+									<p>On/Off:</p>
+									<div class="material-switch">
+										<input id="ZZ-on-off-button" type="checkbox"/>
+										<label for="ZZ-on-off-button" class="label-default"></label>
+									</div>
+								</div>
+								<div class="col-sm-4">
+									<p>Change Direction:</p>
+									<div class="material-switch">
+										<input id="ZZ-direction-button" type="checkbox"/>
+										<label for="ZZ-direction-button" class="label-default"></label>
+									</div>
+								</div>
+								<div class="col-sm-4">
+									<p>Change Speed:</p>
+									<button type="button" class="btn btn-primary btn-sm" id="ZZ-slower-button" aria-pressed="false" autocomplete="off">
+										Slower
+									</button>
+									
+									<button type="button" class="btn btn-primary btn-sm" id="ZZ-faster-button" aria-pressed="false" autocomplete="off">
+										Faster
+									</button>
+								</div>
+								
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row" style="padding-top: 20px; padding-bottom: 5px; margin-right: 10px;">
+					<div class="card">
+						<div class="card-content" style="width: 100%; padding-bottom: 20px;">
+							<div class="card-header-blue">
+								<h4 style="margin-left: 10px;">Other canvas controls</h4>
+							</div>
+							<div class="card-body">
+								<p>Choose the <b>projection type</b>:
+										
+								<select id="projection-selection">
+									<option value="0">Orthogonal Projection</option>
+									<option value="1">Perspective Projection</option>
+								</select>
 
-	    <button id="XX-direction-button">Change Direction</button>
-
-	    <button id="XX-slower-button">Slower</button>
-
-	    <button id="XX-faster-button">Faster</button>
-
-		</p>
-		
-		<p>YY rotation: 
-			
-		<button id="YY-on-off-button">On / Off</button>
-
-	    <button id="YY-direction-button">Change Direction</button>
-
-	    <button id="YY-slower-button">Slower</button>
-
-	    <button id="YY-faster-button">Faster</button>
-
-		</p>
-		
-		<p>ZZ rotation: 
-			
-		<button id="ZZ-on-off-button">On / Off</button>
-
-	    <button id="ZZ-direction-button">Change Direction</button>
-
-	    <button id="ZZ-slower-button">Slower</button>
-
-	    <button id="ZZ-faster-button">Faster</button>
-
-		</p>
-		
-		<p>Choose the <b>projection type</b>:
-		
-        <select id="projection-selection">
-			<option value="0">Orthogonal Projection</option>
-			<option value="1">Perspective Projection</option>
-        </select>
-        
-        </p>
-        
-        <p>Choose the <b>rendering mode</b>:
-		
-        <select id="rendering-mode-selection">
-			<option value="0">Filled Triangles</option>
-			<option value="1">Wireframe</option>
-			<option value="2">Vertices</option>
-        </select>
-        
-        <p>Mesh refinement, using <b>edge midpoints</b> --- Choose the <b>recursion depth</b>:
-            
-        <button id="mid-rec-depth-1-button">1</button>
-        
-        <button id="mid-rec-depth-2-button">2</button>
-        
-        <button id="mid-rec-depth-3-button">3</button>
-        
-        </p>
-                
-        <p>Move vertices to the <b>spherical surface of radius 1</b>:
-            
-        <button id="sphere-surf-button">Do it!</button>
-		
-		</p>
-		
-        <p>
-		
-		<button id="reset-button">Reset</button>
-		
-		</p>
-				
+								<p>Choose the <b>rendering mode</b>:
+									
+								<select id="rendering-mode-selection">
+									<option value="0">Filled Triangles</option>
+									<option value="1">Wireframe</option>
+									<option value="2">Vertices</option>
+								</select>
+								
+								<p>Reset all configurations:</p>
+								
+								<button type="button" class="btn btn-primary btn-sm" id="reset-button" aria-pressed="false" autocomplete="off">
+									Reset
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-5 col-md-offset-1" data-spy="affix" data-offset-left="400">
+				<div class="row" style="padding-top: 90px;">
+					<p>Choose the <b>fractal</b> to be displayed above:
+						
+					<select id="fractal-selection">
+						<option value="0">Sierpinski Gasket</option>
+						<option value="1">Koch Snowflake</option>
+						<option value="2">Mosely Snowflake</option>
+						<option value="3">Menger Sponge</option>
+						<option value="4">Jerusalem Cube</option>
+					</select>
+					
+					<p>Change its color:
+						<input class="jscolor" onchange="updateColor(this.jscolor)" value="337AB7">
+					</p>
+				</div>
+				<div class="row" style="margin-top: 20px;">
+					<canvas id="my-canvas" style="border:1px solid #000000;" width="350" height="350"></canvas>							
+				</div>
+				<div class="row" style="margin-top: 10px;">
+					<p>Current number of iterations:
+						<span id="num-iterations">0</span>
+					</p>
+					<button type="button" class="btn btn-primary btn-sm" id="reduce-recursion-button" aria-pressed="false" autocomplete="off">
+						Decrease
+					</button>
+					<button type="button" class="btn btn-primary btn-sm" id="add-recursion-button" aria-pressed="false" autocomplete="off">
+						Increase
+					</button>
+				</div>
+			</div>
+		</div>
 	</div>
 
 </body>
