@@ -117,7 +117,7 @@ var kDiff = [ 0.2, 0.48, 0.72 ]; // COLOR
 
 // Specular coef.
 
-var kSpec = [ 0.7, 0.7, 0.7 ];
+var kSpec = [ 0.0, 0.0, 0.0 ];
 
 // Phong coef.
 
@@ -831,21 +831,65 @@ function setEventListeners() {
 	
 	// Roda do rato
 	canvas.addEventListener('wheel', function(event) {
+
+		//document.onwheel = function(){ return false; }
+
 		if(event.deltaY > 0) {
 			// Aproxima
-			sx -= 0.1;
-			sy -= 0.1;
-			sz -= 0.1;
+			if (sx <= 0.1) {
+				sx = 0.1;
+				sy = 0.1;
+				sz = 0.1;
+			} else {
+				sx -= 0.1;
+				sy -= 0.1;
+				sz -= 0.1;
+			}
 		} 
 		else {
 			// Afasta
-			sx += 0.1;
-			sy += 0.1;
-			sz += 0.1;
+			if (sx >= 1) {
+				sx = 0.9;
+				sy = 0.9;
+				sz = 0.9;
+			} else {
+				sx += 0.1;
+				sy += 0.1;
+				sz += 0.1;
+			}
 		}
 
 		drawScene();
 	}, false);
+
+	/* document.getElementById('fractalControls').onwheel = function() { 
+		console.log('fractalControls');
+		return true; 
+	} */
+}
+
+function preventDefault(e) {
+	e = e || window.event;
+	if (e.preventDefault)
+		e.preventDefault();
+	e.returnValue = false;
+}
+
+function disableScroll() {
+	if (window.addEventListener) // older FF
+		window.addEventListener('DOMMouseScroll', preventDefault, false);
+	window.onwheel = preventDefault; // modern standard
+	window.onmousewheel = document.onmousewheel = preventDefault; // older browsers, IE
+	window.ontouchmove  = preventDefault; // mobile
+}
+  
+function enableScroll() {
+	if (window.removeEventListener)
+		window.removeEventListener('DOMMouseScroll', preventDefault, false);
+	window.onmousewheel = document.onmousewheel = null; 
+	window.onwheel = null; 
+	window.ontouchmove = null;  
+	document.onkeydown = null;  
 }
 
 //----------------------------------------------------------------------------
